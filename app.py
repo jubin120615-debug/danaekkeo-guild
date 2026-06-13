@@ -4,87 +4,49 @@ from datetime import datetime
 import cv2
 import easyocr
 import numpy as np
-
-import streamlit as st
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 
-# Secrets에서 정보 로드
-creds_dict = st.secrets["gcp_service_account"]
-
-# 구글 인증
-scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-creds = ServiceAccountCredentials.from_json_keyfile_dict(dict(creds_dict), scope)
-client = gspread.authorize(creds)
-
-# 시트 열기 (본인의 시트 이름으로 변경하세요)
-sheet = client.open('길드명부').sheet1
-
-# 1. 페이지 설정 (사이드바 항상 노출 고정)
+# 1. 페이지 설정
 st.set_page_config(page_title="다내꺼 길드 관제 센터", layout="wide", initial_sidebar_state="expanded")
 
 # 2. 세션 상태 초기화
-if "current_menu" not in st.session_state:
-    st.session_state.current_menu = "공지사항"
+if "current_menu" not in st.session_state: st.session_state.current_menu = "공지사항"
+if "auth_target" not in st.session_state: st.session_state.auth_target = None
+if "is_admin" not in st.session_state: st.session_state.is_admin = False
+if "admin_password" not in st.session_state: st.session_state.admin_password = "1336"
+if "discord_url" not in st.session_state: st.session_state.discord_url = "https://discord.com/"
+if "kakao_url" not in st.session_state: st.session_state.kakao_url = "https://open.kakao.com/"
 
-if "auth_target" not in st.session_state:
-    st.session_state.auth_target = None
-
-if "is_admin" not in st.session_state:
-    st.session_state.is_admin = False
-
-# 마스터 환경설정 데이터
-if "admin_password" not in st.session_state:
-    st.session_state.admin_password = "1336"
-
-if "discord_url" not in st.session_state:
-    st.session_state.discord_url = "https://discord.com/"
-
-if "kakao_url" not in st.session_state:
-    st.session_state.kakao_url = "https://open.kakao.com/"
-
-# 게시판 및 게임 데이터 기본값
+# 데이터 초기화
 if "notices" not in st.session_state:
-    st.session_state.notices = [
-        {"id": 1, "유형": "🚫 통제", "내용": "제로서버 주요 보스 구역 및 심연 3층은 전부 '다내꺼' 통제 구역입니다.", "날짜": "2026-06-13 09:00"}
-    ]
-
+    st.session_state.notices = [{"id": 1, "유형": "🚫 통제", "내용": "제로서버 주요 보스 구역 및 심연 3층은 전부 '다내꺼' 통제 구역입니다.", "날짜": "2026-06-13 09:00"}]
 if "headers" not in st.session_state:
-    st.session_state.headers = {"col1": "캐릭터명", "col2": "클래스", "col3": "레벨", "col4": "전투력", "col5": "비고"}
-
+    st.session_state.headers = {"col1": "캐릭터명", "col2": "클래스", "col3": "레벨", "col4": "전투력", "col5": "비고"}
 if "boss_list" not in st.session_state:
-    st.session_state.boss_list = ["벨루치 (필드)", "가나비슈 (필드)", "바포메트 (심연)", "라돈 (심연)", "기타 정예"]
-
-if "guild_members" not in st.session_state:
-    try:
-        # 구글 시트에서 전체 데이터를 리스트로 가져옴
-        data = sheet.get_all_records()
-        if data:
-            st.session_state.guild_members = pd.DataFrame(data)
-        else:
-            # 시트가 비어있을 경우 초기 데이터 사용
-            st.session_state.guild_members = pd.DataFrame([
-                {"캐릭터명": "다내꺼마스터", "클래스": "버서커", "레벨": 75, "전투력": 65400, "비고": "총군"}
-            ])
-    except Exception as e:
-        st.error(f"구글 시트 로드 실패: {e}")
-        st.session_state.guild_members = pd.DataFrame([{"캐릭터명": "에러발생", "클래스": "-", "레벨": 0, "전투력": 0, "비고": "-"}])
-    ])
-
+    st.session_state.boss_list = ["벨루치 (필드)", "가나비슈 (필드)", "바포메트 (심연)", "라돈 (심연)", "기타 정예"]
 if "boss_attendance" not in st.session_state:
-    st.session_state.boss_attendance = {
-        "다내꺼마스터": 42, "아가사": 38, "전투토끼": 15, "태양5_K세이지": 22, "타양5_K스님": 19, "타양5_Kangnam": 31, "타양5_K땡벌": 8
-    }
-
+    st.session_state.boss_attendance = {"다내꺼마스터": 42, "아가사": 38, "전투토끼": 15}
 if "raid_logs" not in st.session_state:
-    st.session_state.raid_logs = [
-        {"날짜": "2026-06-12", "보스명": "벨루치 (필드)", "참여명단": ["다내꺼마스터", "아가사", "전투토끼", "태양5_K세이지", "타양5_Kangnam"]},
-        {"날짜": "2026-06-11", "보스명": "바포메트 (심연)", "참여명단": ["다내꺼마스터", "아가사", "타양5_K스님", "타양5_Kangnam"]}
-    ]
+    st.session_state.raid_logs = []
+
+# 구글 시트 연동
+try:
+    creds_dict = st.secrets["gcp_service_account"]
+    scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
+    creds = ServiceAccountCredentials.from_json_keyfile_dict(dict(creds_dict), scope)
+    client = gspread.authorize(creds)
+    sheet = client.open('길드명부').sheet1
+    if "guild_members" not in st.session_state:
+        data = sheet.get_all_records()
+        st.session_state.guild_members = pd.DataFrame(data) if data else pd.DataFrame([{"캐릭터명": "신규", "클래스": "-", "레벨": 1, "전투력": 0, "비고": "-"}])
+except Exception as e:
+    st.error(f"구글 시트 로드 실패: {e}")
+    st.session_state.guild_members = pd.DataFrame([{"캐릭터명": "에러발생", "클래스": "-", "레벨": 0, "전투력": 0, "비고": "-"}])
 
 @st.cache_resource
 def load_ocr_reader():
-    return easyocr.Reader(['ko', 'en'], gpu=False)
+    return easyocr.Reader(['ko', 'en'], gpu=False)
 
 # 3. 🎨 스타일 가이드 CSS (★사이드바 스크롤바 삭제 및 초슬림 패딩 반영★)
 st.markdown("""
