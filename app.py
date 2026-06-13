@@ -7,26 +7,31 @@ import numpy as np
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 
-# ✅ 1. 페이지 설정 (반드시 최상단 첫 번째 st 호출)
+# 1. 페이지 설정
 st.set_page_config(page_title="다내꺼 길드 관제 센터", layout="wide", initial_sidebar_state="expanded")
 
-# ✅ 2. 구글 시트 연동 함수
+# ==========================================
+# ✅ 구글 시트 연동 함수 모음
+# ==========================================
 @st.cache_resource
-def get_gsheet():
+def get_workbook():
     creds_dict = st.secrets["gcp_service_account"]
     scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
     creds = ServiceAccountCredentials.from_json_keyfile_dict(dict(creds_dict), scope)
     client = gspread.authorize(creds)
-    return client.open('길드명부').sheet1
+    return client.open('길드명부')
 
-def load_members_from_sheet():
+def get_sheet(tab_name):
+    return get_workbook().worksheet(tab_name)
+
+# --- 명부 ---
+def load_members():
     try:
-        sheet = get_gsheet()
-        data = sheet.get_all_records()
+        data = get_sheet('길드명부').get_all_records()
         if data:
             return pd.DataFrame(data)
     except Exception as e:
-        st.warning(f"시트 불러오기 실패: {e}")
+        st.warning(f"명부 불러오기 실패: {e}")
     return pd.DataFrame([
         {"캐릭터명": "다내꺼마스터", "클래스": "버서커", "레벨": 75, "전투력": 65400, "비고": "총군"},
         {"캐릭터명": "아가사", "클래스": "디바인어벤저", "레벨": 73, "전투력": 61200, "비고": "간부"},
@@ -37,67 +42,118 @@ def load_members_from_sheet():
         {"캐릭터명": "타양5_K땡벌", "클래스": "버서커", "레벨": 69, "전투력": 55400, "비고": "-"},
     ])
 
-def save_members_to_sheet(df):
+def save_members(df):
     try:
-        sheet = get_gsheet()
-        sheet.clear()
-        sheet.update([df.columns.tolist()] + df.values.tolist())
-        return True
+        sh = get_sheet('길드명부')
+        sh.clear()
+        sh.update([df.columns.tolist()] + df.astype(str).values.tolist())
     except Exception as e:
-        st.error(f"시트 저장 실패: {e}")
-        return False
+        st.error(f"명부 저장 실패: {e}")
 
-# ✅ 3. 세션 상태 초기화
-if "current_menu" not in st.session_state:
-    st.session_state.current_menu = "공지사항"
+# --- 공지사항 ---
+def load_notices():
+    try:
+        data = get_sheet('공지사항').get_all_records()
+        if data:
+            return data
+    except Exception as e:
+        st.warning(f"공지 불러오기 실패: {e}")
+    return [{"id": 1, "유형": "🚫 통제", "내용": "제로서버 주요 보스 구역 및 심연 3층은 전부 '다내꺼' 통제 구역입니다.", "날짜": "2026-06-13 09:00"}]
 
-if "auth_target" not in st.session_state:
-    st.session_state.auth_target = None
+def save_notices(notices):
+    try:
+        sh = get_sheet('공지사항')
+        sh.clear()
+        sh.update([["id", "유형", "내용", "날짜"]] + [[n["id"], n["유형"], n["내용"], n["날짜"]] for n in notices])
+    except Exception as e:
+        st.error(f"공지 저장 실패: {e}")
 
-if "is_admin" not in st.session_state:
-    st.session_state.is_admin = False
+# --- 참여율 ---
+def load_attendance():
+    try:
+        data = get_sheet('참여율').get_all_records()
+        if data:
+            return {row["캐릭터명"]: int(row["횟수"]) for row in data}
+    except Exception as e:
+        st.warning(f"참여율 불러오기 실패: {e}")
+    return {"다내꺼마스터": 42, "아가사": 38, "전투토끼": 15, "태양5_K세이지": 22, "타양5_K스님": 19, "타양5_Kangnam": 31, "타양5_K땡벌": 8}
 
-if "admin_password" not in st.session_state:
-    st.session_state.admin_password = "1336"
+def save_attendance(attendance):
+    try:
+        sh = get_sheet('참여율')
+        sh.clear()
+        sh.update([["캐릭터명", "횟수"]] + [[k, v] for k, v in attendance.items()])
+    except Exception as e:
+        st.error(f"참여율 저장 실패: {e}")
 
-if "discord_url" not in st.session_state:
-    st.session_state.discord_url = "https://discord.com/"
-
-if "kakao_url" not in st.session_state:
-    st.session_state.kakao_url = "https://open.kakao.com/"
-
-if "notices" not in st.session_state:
-    st.session_state.notices = [
-        {"id": 1, "유형": "🚫 통제", "내용": "제로서버 주요 보스 구역 및 심연 3층은 전부 '다내꺼' 통제 구역입니다.", "날짜": "2026-06-13 09:00"}
-    ]
-
-if "headers" not in st.session_state:
-    st.session_state.headers = {"col1": "캐릭터명", "col2": "클래스", "col3": "레벨", "col4": "전투력", "col5": "비고"}
-
-if "boss_list" not in st.session_state:
-    st.session_state.boss_list = ["벨루치 (필드)", "가나비슈 (필드)", "바포메트 (심연)", "라돈 (심연)", "기타 정예"]
-
-# ✅ 구글 시트에서 명부 초기 로드
-if "guild_members" not in st.session_state:
-    st.session_state.guild_members = load_members_from_sheet()
-
-if "boss_attendance" not in st.session_state:
-    st.session_state.boss_attendance = {
-        "다내꺼마스터": 42, "아가사": 38, "전투토끼": 15, "태양5_K세이지": 22,
-        "타양5_K스님": 19, "타양5_Kangnam": 31, "타양5_K땡벌": 8
-    }
-
-if "raid_logs" not in st.session_state:
-    st.session_state.raid_logs = [
+# --- 레이드 로그 ---
+def load_raid_logs():
+    try:
+        data = get_sheet('레이드로그').get_all_records()
+        if data:
+            logs = {}
+            for row in data:
+                key = (row["날짜"], row["보스명"])
+                if key not in logs:
+                    logs[key] = {"날짜": row["날짜"], "보스명": row["보스명"], "참여명단": []}
+                if row["캐릭터명"]:
+                    logs[key]["참여명단"].append(row["캐릭터명"])
+            return list(logs.values())
+    except Exception as e:
+        st.warning(f"레이드 로그 불러오기 실패: {e}")
+    return [
         {"날짜": "2026-06-12", "보스명": "벨루치 (필드)", "참여명단": ["다내꺼마스터", "아가사", "전투토끼", "태양5_K세이지", "타양5_Kangnam"]},
         {"날짜": "2026-06-11", "보스명": "바포메트 (심연)", "참여명단": ["다내꺼마스터", "아가사", "타양5_K스님", "타양5_Kangnam"]}
     ]
+
+def save_raid_logs(logs):
+    try:
+        sh = get_sheet('레이드로그')
+        sh.clear()
+        rows = [["날짜", "보스명", "캐릭터명"]]
+        for log in logs:
+            for char in log["참여명단"]:
+                rows.append([log["날짜"], log["보스명"], char])
+        sh.update(rows)
+    except Exception as e:
+        st.error(f"레이드 로그 저장 실패: {e}")
+
+# ==========================================
+# 2. 세션 상태 초기화 (시트에서 최초 1회 로드)
+# ==========================================
+if "current_menu" not in st.session_state:
+    st.session_state.current_menu = "공지사항"
+if "auth_target" not in st.session_state:
+    st.session_state.auth_target = None
+if "is_admin" not in st.session_state:
+    st.session_state.is_admin = False
+if "admin_password" not in st.session_state:
+    st.session_state.admin_password = "1336"
+if "discord_url" not in st.session_state:
+    st.session_state.discord_url = "https://discord.com/"
+if "kakao_url" not in st.session_state:
+    st.session_state.kakao_url = "https://open.kakao.com/"
+if "headers" not in st.session_state:
+    st.session_state.headers = {"col1": "캐릭터명", "col2": "클래스", "col3": "레벨", "col4": "전투력", "col5": "비고"}
+if "boss_list" not in st.session_state:
+    st.session_state.boss_list = ["벨루치 (필드)", "가나비슈 (필드)", "바포메트 (심연)", "라돈 (심연)", "기타 정예"]
+
+if "notices" not in st.session_state:
+    st.session_state.notices = load_notices()
+if "guild_members" not in st.session_state:
+    st.session_state.guild_members = load_members()
+if "boss_attendance" not in st.session_state:
+    st.session_state.boss_attendance = load_attendance()
+if "raid_logs" not in st.session_state:
+    st.session_state.raid_logs = load_raid_logs()
 
 @st.cache_resource
 def load_ocr_reader():
     return easyocr.Reader(['ko', 'en'], gpu=False)
 
-# 4. 스타일 CSS (기존 그대로)
+# ==========================================
+# 3. CSS 스타일
+# ==========================================
 st.markdown("""
 <style>
     html, body, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {
@@ -155,8 +211,9 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-
-# 5. 사이드바
+# ==========================================
+# 4. 사이드바
+# ==========================================
 with st.sidebar:
     st.markdown("""
     <div style="text-align: center; width: 100%;">
@@ -169,7 +226,7 @@ with st.sidebar:
         <div class="sidebar-divider"></div>
     </div>
     """, unsafe_allow_html=True)
-    
+
     if st.button("📢", help="공지사항", key="side_m1"):
         st.session_state.current_menu = "공지사항"
         st.session_state.auth_target = None
@@ -219,8 +276,9 @@ with st.sidebar:
         active_idx = menu_map.get(st.session_state.current_menu, 1)
         st.markdown(f"""<style>[data-testid="stSidebarUserContent"] div.stButton:nth-child({active_idx + 2}) > button {{ border-color: #00e676 !important; color: #00e676 !important; background-color: rgba(0, 230, 118, 0.12) !important; box-shadow: 0 0 10px rgba(0, 230, 118, 0.2) !important; }}</style>""", unsafe_allow_html=True)
 
-
-# 6. 비밀번호 인증 화면
+# ==========================================
+# 5. 비밀번호 인증
+# ==========================================
 if st.session_state.auth_target is not None:
     target_name = "👑 간부 관리자 권한" if st.session_state.auth_target == "admin" else "⚙️ 관제 센터 마스터 설정"
     st.markdown(f"""
@@ -229,13 +287,13 @@ if st.session_state.auth_target is not None:
         <p style="color: #888888; font-size: 0.95rem;">{target_name} 진입을 위한 비밀번호를 기입하세요.</p>
     </div>
     """, unsafe_allow_html=True)
-    
+
     with st.form("isolated_password_form", clear_on_submit=True):
         input_pwd = st.text_input("PASSWORD INPUT", type="password", label_visibility="collapsed", placeholder="비밀번호를 입력하세요...")
         c_sub, c_esc = st.columns(2)
         btn_login = c_sub.form_submit_button("🔓 인증 및 로그인", use_container_width=True)
         btn_cancel = c_esc.form_submit_button("↩️ 돌아가기", use_container_width=True)
-        
+
         if btn_login:
             if input_pwd == st.session_state.admin_password:
                 if st.session_state.auth_target == "admin":
@@ -260,7 +318,9 @@ else:
     st.caption(f"다내꺼 관제 대시보드 > {st.session_state.current_menu}")
     st.markdown("<hr style='border-color:#2d2d2d;'>", unsafe_allow_html=True)
 
+    # ==========================================
     # 환경설정
+    # ==========================================
     if st.session_state.current_menu == "환경설정":
         st.subheader("⚙️ 마스터 시스템 환경설정")
         st.info("디스코드, 카카오톡 주소 및 진입 패스워드를 통합 제어하는 전용 제어반입니다.")
@@ -285,7 +345,9 @@ else:
             st.session_state.current_menu = "공지사항"
             st.rerun()
 
+    # ==========================================
     # 공지사항
+    # ==========================================
     elif st.session_state.current_menu == "공지사항":
         if st.session_state.is_admin:
             with st.expander("📝 [간부 전용] 새 공지사항 강제 등록", expanded=True):
@@ -298,12 +360,15 @@ else:
                         if notice_content.strip():
                             new_id = len(st.session_state.notices) + 1
                             now_str = datetime.now().strftime('%Y-%m-%d %H:%M')
-                            st.session_state.notices.insert(0, {"id": new_id, "유형": notice_type, "내용": notice_content, "날짜": now_str})
-                            st.success("✅ 새로운 공지사항이 등록되었습니다!")
+                            new_notice = {"id": new_id, "유형": notice_type, "내용": notice_content, "날짜": now_str}
+                            st.session_state.notices.insert(0, new_notice)
+                            save_notices(st.session_state.notices)  # ✅ 시트 저장
+                            st.success("✅ 공지사항이 등록되었습니다!")
                             st.rerun()
                         else:
                             st.error("내용을 정확히 입력해주세요.")
             st.markdown("<br>", unsafe_allow_html=True)
+
         for notice in st.session_state.notices:
             st.markdown(f"""
             <div class="notice-card">
@@ -312,7 +377,9 @@ else:
             </div>
             """, unsafe_allow_html=True)
 
-    # 명부 (✅ 구글 시트 저장 연동)
+    # ==========================================
+    # 명부
+    # ==========================================
     elif st.session_state.current_menu == "명부":
         st.subheader("👥 길드 명부 및 전투력 순위")
         if st.session_state.is_admin:
@@ -335,16 +402,18 @@ else:
 
         if st.session_state.is_admin:
             edited_df = st.data_editor(sorted_members, use_container_width=True, hide_index=True, num_rows="dynamic", key="member_editor", column_config=cfg)
-            if not edited_df.equals(st.session_state.guild_members):
+            col_save, _ = st.columns([1, 4])
+            if col_save.button("💾 명부 저장", use_container_width=True):
                 st.session_state.guild_members = edited_df
-                # ✅ 구글 시트에 자동 저장
-                if save_members_to_sheet(edited_df):
-                    st.toast("✅ 구글 시트에 자동 저장되었습니다.")
+                save_members(edited_df)  # ✅ 시트 저장
+                st.toast("✅ 명부가 구글 시트에 저장되었습니다.")
                 st.rerun()
         else:
             st.dataframe(sorted_members, use_container_width=True, hide_index=True, column_config=cfg)
 
+    # ==========================================
     # 참여율
+    # ==========================================
     elif st.session_state.current_menu == "참여율":
         if st.session_state.is_admin:
             st.markdown("### 🛠️ 레이드 출석 체크 입력 패널")
@@ -367,7 +436,7 @@ else:
                     st.image(image, caption="업로드된 스크린샷", channels="BGR", width=400)
                     if st.button("🔍 AI 분석 시작"):
                         with st.spinner("분석 중..."):
-                            ocr_results = reader.readtext(image)
+                            ocr_results = load_ocr_reader().readtext(image)
                             extracted_text = [res[1].strip() for res in ocr_results]
                             detected_members = [m for m in all_characters if any(m in t for t in extracted_text)]
                             st.session_state.detected_cache = detected_members
@@ -391,10 +460,14 @@ else:
                     for char in final_selected_chars:
                         st.session_state.boss_attendance[char] += 1
                     st.session_state.raid_logs.append({"날짜": raid_date, "보스명": boss_name, "참여명단": final_selected_chars})
+                    save_attendance(st.session_state.boss_attendance)  # ✅ 시트 저장
+                    save_raid_logs(st.session_state.raid_logs)          # ✅ 시트 저장
                     st.success("🔥 정산 로그 등록이 완료되었습니다!")
                     if "ocr_done" in st.session_state:
                         st.session_state.ocr_done = False
                     st.rerun()
+                else:
+                    st.warning("참여 인원을 1명 이상 선택해주세요.")
             st.markdown("---")
 
         st.markdown("### 📊 연합 보스 레이드 누적 참여 순위")
@@ -409,7 +482,9 @@ else:
         st.markdown("<br>", unsafe_allow_html=True)
         st.dataframe(df_stat, use_container_width=True, hide_index=True, column_config={"누적 참여 횟수": st.column_config.ProgressColumn("🏅 누적 참여율 (포인트)", min_value=0, max_value=100, format="%d 회")})
 
+    # ==========================================
     # 로그
+    # ==========================================
     elif st.session_state.current_menu == "로그":
         st.subheader("📜 레이드 정산 히스토리 로그")
         if st.session_state.raid_logs:
@@ -427,3 +502,5 @@ else:
             for m_idx, m_name in enumerate(target_log["참여명단"]):
                 with member_cols[m_idx % 5]:
                     st.markdown(f"• `{m_name}`")
+        else:
+            st.info("아직 등록된 레이드 로그가 없습니다.")
