@@ -28,7 +28,7 @@ if "current_menu" not in st.session_state:
     st.session_state.current_menu = "공지사항"
 
 if "auth_target" not in st.session_state:
-    st.session_state.auth_target = None  #'admin' 또는 'config' 또는 None
+    st.session_state.auth_target = None
 
 if "is_admin" not in st.session_state:
     st.session_state.is_admin = False
