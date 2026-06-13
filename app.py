@@ -56,14 +56,19 @@ if "boss_list" not in st.session_state:
     st.session_state.boss_list = ["벨루치 (필드)", "가나비슈 (필드)", "바포메트 (심연)", "라돈 (심연)", "기타 정예"]
 
 if "guild_members" not in st.session_state:
-    st.session_state.guild_members = pd.DataFrame([
-        {"캐릭터명": "다내꺼마스터", "클래스": "버서커", "레벨": 75, "전투력": 65400, "비고": "총군"},
-        {"캐릭터명": "아가사", "클래스": "디바인어벤저", "레벨": 73, "전투력": 61200, "비고": "간부"},
-        {"캐릭터명": "전투토끼", "클래스": "엘리멘탈리스트", "레벨": 72, "전투력": 59800, "비고": "-"},
-        {"캐릭터명": "태양5_K세이지", "클래스": "레인저", "레벨": 71, "전투력": 58500, "비고": "-"},
-        {"캐릭터명": "타양5_K스님", "클래스": "다크프리스트", "레벨": 70, "전투력": 57200, "비고": "-"},
-        {"캐릭터명": "타양5_Kangnam", "클래스": "뱅가드", "레벨": 70, "전투력": 56900, "비고": "-"},
-        {"캐릭터명": "타양5_K땡벌", "클래스": "버서커", "레벨": 69, "전투력": 55400, "비고": "-"},
+    try:
+        # 구글 시트에서 전체 데이터를 리스트로 가져옴
+        data = sheet.get_all_records()
+        if data:
+            st.session_state.guild_members = pd.DataFrame(data)
+        else:
+            # 시트가 비어있을 경우 초기 데이터 사용
+            st.session_state.guild_members = pd.DataFrame([
+                {"캐릭터명": "다내꺼마스터", "클래스": "버서커", "레벨": 75, "전투력": 65400, "비고": "총군"}
+            ])
+    except Exception as e:
+        st.error(f"구글 시트 로드 실패: {e}")
+        st.session_state.guild_members = pd.DataFrame([{"캐릭터명": "에러발생", "클래스": "-", "레벨": 0, "전투력": 0, "비고": "-"}])
     ])
 
 if "boss_attendance" not in st.session_state:
