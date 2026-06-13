@@ -465,8 +465,8 @@ else:
 # ==========================================
 # 참여율
 # ==========================================
-    elif st.session_state.current_menu == "참여율":
-    if st.session_state.is_admin:
+        elif st.session_state.current_menu == "참여율":
+        if st.session_state.is_admin:
         st.markdown("### 🛠️ 레이드 출석 체크 입력 패널")
         c_date, c_boss = st.columns(2)
         raid_date = c_date.date_input("레이드 진행 날짜", datetime.now()).strftime('%Y-%m-%d')
