@@ -5,6 +5,21 @@ import cv2
 import easyocr
 import numpy as np
 
+import streamlit as st
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+
+# Secrets에서 정보 로드
+creds_dict = st.secrets["gcp_service_account"]
+
+# 구글 인증
+scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
+creds = ServiceAccountCredentials.from_json_keyfile_dict(dict(creds_dict), scope)
+client = gspread.authorize(creds)
+
+# 시트 열기 (본인의 시트 이름으로 변경하세요)
+sheet = client.open('길드명부').sheet1
+
 # 1. 페이지 설정 (사이드바 항상 노출 고정)
 st.set_page_config(page_title="다내꺼 길드 관제 센터", layout="wide", initial_sidebar_state="expanded")
 
