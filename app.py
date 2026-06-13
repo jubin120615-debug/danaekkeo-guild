@@ -35,7 +35,7 @@ if "is_admin" not in st.session_state:
 
 # 마스터 환경설정 데이터
 if "admin_password" not in st.session_state:
-    st.session_state.admin_password = "1336"
+    st.session_state.admin_password = "1336"
 
 if "discord_url" not in st.session_state:
     st.session_state.discord_url = "https://discord.com/"
