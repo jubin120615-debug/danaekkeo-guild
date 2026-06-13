@@ -11,7 +11,7 @@ from oauth2client.service_account import ServiceAccountCredentials
 st.set_page_config(page_title="다내꺼 길드 관제 센터", layout="wide", initial_sidebar_state="expanded")
 
 # ==========================================
-# ✅ 구글 시트 연동 함수 모음
+# 구글 시트 연동 함수
 # ==========================================
 @st.cache_resource
 def get_workbook():
@@ -24,7 +24,6 @@ def get_workbook():
 def get_sheet(tab_name):
     return get_workbook().worksheet(tab_name)
 
-# --- 명부 ---
 def load_members():
     try:
         data = get_sheet('길드명부').get_all_records()
@@ -50,7 +49,6 @@ def save_members(df):
     except Exception as e:
         st.error(f"명부 저장 실패: {e}")
 
-# --- 공지사항 ---
 def load_notices():
     try:
         data = get_sheet('공지사항').get_all_records()
@@ -68,7 +66,6 @@ def save_notices(notices):
     except Exception as e:
         st.error(f"공지 저장 실패: {e}")
 
-# --- 참여율 ---
 def load_attendance():
     try:
         data = get_sheet('참여율').get_all_records()
@@ -86,7 +83,6 @@ def save_attendance(attendance):
     except Exception as e:
         st.error(f"참여율 저장 실패: {e}")
 
-# --- 레이드 로그 ---
 def load_raid_logs():
     try:
         data = get_sheet('레이드로그').get_all_records()
@@ -119,7 +115,7 @@ def save_raid_logs(logs):
         st.error(f"레이드 로그 저장 실패: {e}")
 
 # ==========================================
-# 2. 세션 상태 초기화 (시트에서 최초 1회 로드)
+# 2. 세션 상태 초기화
 # ==========================================
 if "current_menu" not in st.session_state:
     st.session_state.current_menu = "공지사항"
@@ -137,7 +133,6 @@ if "headers" not in st.session_state:
     st.session_state.headers = {"col1": "캐릭터명", "col2": "클래스", "col3": "레벨", "col4": "전투력", "col5": "비고"}
 if "boss_list" not in st.session_state:
     st.session_state.boss_list = ["벨루치 (필드)", "가나비슈 (필드)", "바포메트 (심연)", "라돈 (심연)", "기타 정예"]
-
 if "notices" not in st.session_state:
     st.session_state.notices = load_notices()
 if "guild_members" not in st.session_state:
@@ -208,6 +203,10 @@ st.markdown("""
         border-radius: 12px; padding: 20px; text-align: center;
     }
     .stat-number { color: #00e676; font-size: 2rem; font-weight: bold; margin-top: 10px; }
+    .member-row {
+        border-bottom: 1px solid #2d2d2d;
+        padding: 6px 0;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -217,8 +216,8 @@ st.markdown("""
 with st.sidebar:
     st.markdown("""
     <div style="text-align: center; width: 100%;">
-        <div style="width: 54px; height: 54px; background: linear-gradient(135deg, #00e676, #00b0ff); 
-                    border-radius: 14px; display: inline-flex; align-items: center; justify-content: center; 
+        <div style="width: 54px; height: 54px; background: linear-gradient(135deg, #00e676, #00b0ff);
+                    border-radius: 14px; display: inline-flex; align-items: center; justify-content: center;
                     font-weight: bold; color: #121212; font-size: 0.85rem; margin-bottom: 6px;
                     box-shadow: 0 4px 12px rgba(0, 230, 118, 0.35);">
             다내꺼
@@ -362,7 +361,7 @@ else:
                             now_str = datetime.now().strftime('%Y-%m-%d %H:%M')
                             new_notice = {"id": new_id, "유형": notice_type, "내용": notice_content, "날짜": now_str}
                             st.session_state.notices.insert(0, new_notice)
-                            save_notices(st.session_state.notices)  # ✅ 시트 저장
+                            save_notices(st.session_state.notices)
                             st.success("✅ 공지사항이 등록되었습니다!")
                             st.rerun()
                         else:
@@ -382,6 +381,7 @@ else:
     # ==========================================
     elif st.session_state.current_menu == "명부":
         st.subheader("👥 길드 명부 및 전투력 순위")
+
         if st.session_state.is_admin:
             with st.expander("🛠️ 표 상단 타이틀 명칭 수정", expanded=False):
                 c1, c2, c3, c4, c5 = st.columns(5)
@@ -391,25 +391,76 @@ else:
                 st.session_state.headers["col4"] = c4.text_input("4번 칸", value=st.session_state.headers["col4"])
                 st.session_state.headers["col5"] = c5.text_input("5번 칸", value=st.session_state.headers["col5"])
 
-        sorted_members = st.session_state.guild_members.sort_values(by="전투력", ascending=False)
-        cfg = {
-            "캐릭터명": st.column_config.TextColumn(st.session_state.headers["col1"], required=True),
-            "클래스": st.column_config.SelectboxColumn(st.session_state.headers["col2"], options=["버서커", "디바인어벤저", "엘리멘탈리스트", "레인저", "뱅가드", "다크프리스트"]),
-            "레벨": st.column_config.NumberColumn(st.session_state.headers["col3"], min_value=1, format="%d"),
-            "전투력": st.column_config.NumberColumn(st.session_state.headers["col4"], min_value=0, format="%d"),
-            "비고": st.column_config.TextColumn(st.session_state.headers["col5"])
-        }
+            with st.expander("➕ 새 길드원 추가", expanded=False):
+                with st.form("add_member_form", clear_on_submit=True):
+                    a1, a2, a3, a4, a5 = st.columns(5)
+                    new_name  = a1.text_input(st.session_state.headers["col1"])
+                    new_class = a2.selectbox(st.session_state.headers["col2"], ["버서커", "디바인어벤저", "엘리멘탈리스트", "레인저", "뱅가드", "다크프리스트"])
+                    new_level = a3.number_input(st.session_state.headers["col3"], min_value=1, value=1, step=1)
+                    new_power = a4.number_input(st.session_state.headers["col4"], min_value=0, value=0, step=100)
+                    new_note  = a5.text_input(st.session_state.headers["col5"])
+                    if st.form_submit_button("➕ 추가", use_container_width=True):
+                        if new_name.strip():
+                            new_row = pd.DataFrame([{"캐릭터명": new_name, "클래스": new_class, "레벨": int(new_level), "전투력": int(new_power), "비고": new_note}])
+                            st.session_state.guild_members = pd.concat([st.session_state.guild_members, new_row], ignore_index=True)
+                            save_members(st.session_state.guild_members)
+                            st.toast("✅ 새 길드원이 추가되었습니다.")
+                            st.rerun()
+                        else:
+                            st.error("캐릭터명을 입력해주세요.")
 
-        if st.session_state.is_admin:
-            edited_df = st.data_editor(sorted_members, use_container_width=True, hide_index=True, num_rows="dynamic", key="member_editor", column_config=cfg)
-            col_save, _ = st.columns([1, 4])
-            if col_save.button("💾 명부 저장", use_container_width=True):
-                st.session_state.guild_members = edited_df
-                save_members(edited_df)  # ✅ 시트 저장
-                st.toast("✅ 명부가 구글 시트에 저장되었습니다.")
-                st.rerun()
-        else:
-            st.dataframe(sorted_members, use_container_width=True, hide_index=True, column_config=cfg)
+        sorted_members = st.session_state.guild_members.sort_values(by="전투력", ascending=False).reset_index(drop=True)
+        class_options = ["버서커", "디바인어벤저", "엘리멘탈리스트", "레인저", "뱅가드", "다크프리스트"]
+
+        # 헤더
+        h1, h2, h3, h4, h5, h6 = st.columns([2.5, 2, 1, 1.5, 1.5, 1])
+        for col, label in zip([h1, h2, h3, h4, h5], [
+            st.session_state.headers["col1"], st.session_state.headers["col2"],
+            st.session_state.headers["col3"], st.session_state.headers["col4"],
+            st.session_state.headers["col5"]
+        ]):
+            col.markdown(f"<div style='color:#00e676; font-weight:bold; font-size:0.85rem; padding:4px 0;'>{label}</div>", unsafe_allow_html=True)
+        st.markdown("<hr style='border-color:#2d2d2d; margin:4px 0 8px 0;'>", unsafe_allow_html=True)
+
+        for i, row in sorted_members.iterrows():
+            if st.session_state.is_admin:
+                with st.form(f"edit_row_{i}"):
+                    c1, c2, c3, c4, c5, c6 = st.columns([2.5, 2, 1, 1.5, 1.5, 1])
+                    e_name  = c1.text_input("이름",    value=str(row["캐릭터명"]), label_visibility="collapsed", key=f"n_{i}")
+                    e_class = c2.selectbox("클래스", class_options, index=class_options.index(row["클래스"]) if row["클래스"] in class_options else 0, label_visibility="collapsed", key=f"c_{i}")
+                    e_level = c3.number_input("레벨",   value=int(row["레벨"]),    min_value=1,  step=1,   label_visibility="collapsed", key=f"l_{i}")
+                    e_power = c4.number_input("전투력", value=int(row["전투력"]),  min_value=0,  step=100, label_visibility="collapsed", key=f"p_{i}")
+                    e_note  = c5.text_input("비고",    value=str(row["비고"]),    label_visibility="collapsed", key=f"note_{i}")
+                    col_save, col_del = c6.columns(2)
+                    btn_save = col_save.form_submit_button("💾")
+                    btn_del  = col_del.form_submit_button("🗑️")
+
+                    if btn_save:
+                        mask = st.session_state.guild_members["캐릭터명"] == row["캐릭터명"]
+                        st.session_state.guild_members.loc[mask, "캐릭터명"] = e_name
+                        st.session_state.guild_members.loc[mask, "클래스"]   = e_class
+                        st.session_state.guild_members.loc[mask, "레벨"]     = int(e_level)
+                        st.session_state.guild_members.loc[mask, "전투력"]   = int(e_power)
+                        st.session_state.guild_members.loc[mask, "비고"]     = e_note
+                        save_members(st.session_state.guild_members)
+                        st.toast(f"✅ {e_name} 저장 완료")
+                        st.rerun()
+
+                    if btn_del:
+                        st.session_state.guild_members = st.session_state.guild_members[
+                            st.session_state.guild_members["캐릭터명"] != row["캐릭터명"]
+                        ].reset_index(drop=True)
+                        save_members(st.session_state.guild_members)
+                        st.toast(f"🗑️ {row['캐릭터명']} 삭제 완료")
+                        st.rerun()
+            else:
+                c1, c2, c3, c4, c5, c6 = st.columns([2.5, 2, 1, 1.5, 1.5, 1])
+                c1.markdown(f"<div style='padding:10px 0;'>{row['캐릭터명']}</div>", unsafe_allow_html=True)
+                c2.markdown(f"<div style='padding:10px 0; color:#aaa;'>{row['클래스']}</div>", unsafe_allow_html=True)
+                c3.markdown(f"<div style='padding:10px 0; color:#aaa;'>{int(row['레벨'])}</div>", unsafe_allow_html=True)
+                c4.markdown(f"<div style='padding:10px 0; color:#00e676; font-weight:bold;'>{int(row['전투력']):,}</div>", unsafe_allow_html=True)
+                c5.markdown(f"<div style='padding:10px 0; color:#aaa;'>{row['비고']}</div>", unsafe_allow_html=True)
+                st.markdown("<div style='border-bottom:1px solid #2d2d2d; margin:2px 0;'></div>", unsafe_allow_html=True)
 
     # ==========================================
     # 참여율
@@ -428,7 +479,6 @@ else:
             final_selected_chars = []
 
             if input_method == "📸 AI 스크린샷 인식 기입":
-                reader = load_ocr_reader()
                 uploaded_file = st.file_uploader("스크린샷 업로드", type=["png", "jpg", "jpeg"])
                 if uploaded_file is not None:
                     file_bytes = np.asarray(bytearray(uploaded_file.read()), dtype=np.uint8)
@@ -460,8 +510,8 @@ else:
                     for char in final_selected_chars:
                         st.session_state.boss_attendance[char] += 1
                     st.session_state.raid_logs.append({"날짜": raid_date, "보스명": boss_name, "참여명단": final_selected_chars})
-                    save_attendance(st.session_state.boss_attendance)  # ✅ 시트 저장
-                    save_raid_logs(st.session_state.raid_logs)          # ✅ 시트 저장
+                    save_attendance(st.session_state.boss_attendance)
+                    save_raid_logs(st.session_state.raid_logs)
                     st.success("🔥 정산 로그 등록이 완료되었습니다!")
                     if "ocr_done" in st.session_state:
                         st.session_state.ocr_done = False
