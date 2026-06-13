@@ -31,7 +31,7 @@ if "auth_target" not in st.session_state:
     st.session_state.auth_target = None
 
 if "is_admin" not in st.session_state:
-    st.session_state.is_admin = False
+    st.session_state.is_admin = False
 
 # 마스터 환경설정 데이터
 if "admin_password" not in st.session_state:
