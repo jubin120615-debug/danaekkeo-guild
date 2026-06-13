@@ -25,7 +25,7 @@ st.set_page_config(page_title="다내꺼 길드 관제 센터", layout="wide", i
 
 # 2. 세션 상태 초기화
 if "current_menu" not in st.session_state:
-    st.session_state.current_menu = "공지사항"
+    st.session_state.current_menu = "공지사항"
 
 if "auth_target" not in st.session_state:
     st.session_state.auth_target = None  # 'admin' 또는 'config' 또는 None
