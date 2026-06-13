@@ -217,7 +217,7 @@ with st.sidebar:
     
     # 1층: 기본 메뉴 그룹
     if st.button("📢", help="공지사항", key="side_m1"):
-        st.session_state.current_menu = "공지사항"
+        st.session_state.current_menu ="공지사항"
         st.session_state.auth_target = None
         st.rerun()
         
