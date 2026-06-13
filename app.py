@@ -418,6 +418,17 @@ else:
                 st.rerun()
         else:
             st.dataframe(sorted_members, use_container_width=True, hide_index=True, column_config=cfg)
+# 기존 명부 표시 코드 아래에 추가
+    if st.session_state.is_admin:
+        # 저장 버튼을 명부 하단에 배치
+        if st.button("💾 구글 시트에 변경사항 일괄 저장"):
+            try:
+                # 1. 기존 데이터를 시트에서 지우고 헤더와 함께 업데이트
+                sheet.clear()
+                sheet.update([st.session_state.guild_members.columns.values.tolist()] + st.session_state.guild_members.values.tolist())
+                st.success("✅ 구글 시트 데이터가 성공적으로 동기화되었습니다!")
+            except Exception as e:
+                st.error(f"저장 실패: {e}")
 
     # ==========================================
     # 📊 [콘텐츠 3] 보스 참여율 정산 구역
