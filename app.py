@@ -489,7 +489,7 @@ else:
                             ocr_results = load_ocr_reader().readtext(image)
                             extracted_text = [res[1].strip() for res in ocr_results]
                             extracted_text = [str(res[1]).strip() for res in ocr_results if res and len(res) > 1]
-                            detected_members = [m for m in all_characters if any(m in t for t in extracted_text)]
+                            detected_members = [m for m in all_characters if any(str(m) in t for t in extracted_text)]
                             st.session_state.ocr_done = True
                 if st.session_state.get("ocr_done", False):
                     found_list = st.session_state.get("detected_cache", [])
