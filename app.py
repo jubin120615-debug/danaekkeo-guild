@@ -467,13 +467,13 @@ else:
 # ==========================================
     elif st.session_state.current_menu == "참여율":
         if st.session_state.is_admin:
-        st.markdown("### 🛠️ 레이드 출석 체크 입력 패널")
-        c_date, c_boss = st.columns(2)
-        raid_date = c_date.date_input("레이드 진행 날짜", datetime.now()).strftime('%Y-%m-%d')
-        boss_name = c_boss.selectbox("보스 몬스터 선택", st.session_state.boss_list)
+            st.markdown("### 🛠️ 레이드 출석 체크 입력 패널")
+            c_date, c_boss = st.columns(2)
+            raid_date = c_date.date_input("레이드 진행 날짜", datetime.now()).strftime('%Y-%m-%d')
+            boss_name = c_boss.selectbox("보스 몬스터 선택", st.session_state.boss_list)
 
-        all_characters = st.session_state.guild_members["캐릭터명"].tolist()
-        all_characters = [str(c) for c in all_characters if c and str(c).strip()]
+            all_characters = st.session_state.guild_members["캐릭터명"].tolist()
+            all_characters = [str(c) for c in all_characters if c and str(c).strip()]
 
         for char in all_characters:
             if char not in st.session_state.boss_attendance:
