@@ -237,11 +237,16 @@ st.markdown("""
         margin: 3px 0 !important;
         line-height: 1.2 !important;
         transition: all 0.2s ease !important;
+        display: flex !important;
+        align-items: center !important;
     }
     [data-testid="stSidebarUserContent"] div.stButton > button p {
         text-align: left !important;
         font-size: 0.95rem !important;
         margin: 0 !important;
+        display: flex !important;
+        align-items: center !important;
+        gap: 12px !important;
     }
     [data-testid="stSidebarUserContent"] div.stButton > button:hover {
         background-color: #232428 !important;
@@ -258,17 +263,23 @@ st.markdown("""
     }
     .sidebar-divider { width: 100%; height: 1px; background-color: #2d2d2d; margin: 12px 0; }
     .sidebar-link-btn {
-        display: flex; align-items: center; gap: 10px;
+        display: flex; align-items: center; gap: 12px;
         width: 100%; min-height: 46px; box-sizing: border-box;
         border-radius: 10px; background-color: transparent;
-        border: 1px solid transparent; color: #aaaaaa;
+        border: 1px solid transparent; color: #aaaaaa !important;
         font-size: 0.95rem; font-weight: 500;
-        text-decoration: none; padding: 0 14px;
+        text-decoration: none !important; padding: 0 14px;
         transition: all 0.2s ease; margin: 3px 0;
     }
+    .sidebar-link-btn:visited { color: #aaaaaa !important; }
     .sidebar-link-btn:hover {
         border-color: #2d3035 !important; color: #00e676 !important;
         background-color: #232428 !important;
+        text-decoration: none !important;
+    }
+    .sidebar-icon {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 22px; flex-shrink: 0; font-size: 1.05rem;
     }
     .auth-box {
         background-color: #1a1a1a; border: 1px solid #333333; border-radius: 16px;
@@ -309,14 +320,14 @@ with st.sidebar:
 
     # 메인 메뉴
     menu_items = [
-        ("공지사항", "📢  공지사항"),
-        ("명부", "👥  길드원 명부"),
-        ("참여율", "📊  보스 참여 기록"),
-        ("로그", "📜  레이드 로그"),
+        ("공지사항", "📢", "공지사항"),
+        ("명부", "👥", "길드원 명부"),
+        ("참여율", "📊", "보스 참여 기록"),
+        ("로그", "📜", "레이드 로그"),
     ]
-    for menu_key, menu_label in menu_items:
+    for menu_key, menu_icon, menu_text in menu_items:
         is_active = (st.session_state.auth_target is None) and (st.session_state.current_menu == menu_key)
-        if st.button(menu_label, key=f"side_{menu_key}", use_container_width=True,
+        if st.button(f"{menu_icon} {menu_text}", key=f"side_{menu_key}", use_container_width=True,
                       type="primary" if is_active else "secondary"):
             st.session_state.current_menu = menu_key
             st.session_state.auth_target = None
@@ -326,19 +337,22 @@ with st.sidebar:
 
     # 외부 링크
     st.markdown(
-        f'<a href="{st.session_state.discord_url}" target="_blank" class="sidebar-link-btn">🎮&nbsp;&nbsp;디스코드 채널</a>',
+        f'<a href="{st.session_state.discord_url}" target="_blank" class="sidebar-link-btn">'
+        f'<span class="sidebar-icon">🎮</span><span>디스코드 채널</span></a>',
         unsafe_allow_html=True
     )
     st.markdown(
-        f'<a href="{st.session_state.kakao_url}" target="_blank" class="sidebar-link-btn">💬&nbsp;&nbsp;카카오톡방</a>',
+        f'<a href="{st.session_state.kakao_url}" target="_blank" class="sidebar-link-btn">'
+        f'<span class="sidebar-icon">💬</span><span>카카오톡방</span></a>',
         unsafe_allow_html=True
     )
 
     st.markdown('<div class="sidebar-divider"></div>', unsafe_allow_html=True)
 
     # 관리자 / 환경설정
-    admin_label = "🛡️  관리자 모드 ON" if st.session_state.is_admin else "🔑  간부 관리자 모드"
-    if st.button(admin_label, key="side_admin_mode", use_container_width=True,
+    admin_icon = "🛡️" if st.session_state.is_admin else "🔑"
+    admin_text = "관리자 모드 ON" if st.session_state.is_admin else "간부 관리자 모드"
+    if st.button(f"{admin_icon} {admin_text}", key="side_admin_mode", use_container_width=True,
                   type="primary" if st.session_state.is_admin else "secondary"):
         if st.session_state.is_admin:
             st.session_state.is_admin = False
@@ -348,7 +362,7 @@ with st.sidebar:
         st.rerun()
 
     config_active = (st.session_state.auth_target == "config") or (st.session_state.current_menu == "환경설정")
-    if st.button("⚙️  마스터 환경설정", key="side_config_mode", use_container_width=True,
+    if st.button("⚙️ 마스터 환경설정", key="side_config_mode", use_container_width=True,
                   type="primary" if config_active else "secondary"):
         st.session_state.auth_target = "config"
         st.rerun()
