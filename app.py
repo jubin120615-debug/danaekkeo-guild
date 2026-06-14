@@ -141,6 +141,10 @@ if "boss_attendance" not in st.session_state:
     st.session_state.boss_attendance = load_attendance()
 if "raid_logs" not in st.session_state:
     st.session_state.raid_logs = load_raid_logs()
+if "ocr_done" not in st.session_state:
+    st.session_state.ocr_done = False
+if "detected_cache" not in st.session_state:
+    st.session_state.detected_cache = []
 
 @st.cache_resource
 def load_ocr_reader():
@@ -203,10 +207,6 @@ st.markdown("""
         border-radius: 12px; padding: 20px; text-align: center;
     }
     .stat-number { color: #00e676; font-size: 2rem; font-weight: bold; margin-top: 10px; }
-    .member-row {
-        border-bottom: 1px solid #2d2d2d;
-        padding: 6px 0;
-    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -412,7 +412,6 @@ else:
         sorted_members = st.session_state.guild_members.sort_values(by="전투력", ascending=False).reset_index(drop=True)
         class_options = ["버서커", "디바인어벤저", "엘리멘탈리스트", "레인저", "뱅가드", "다크프리스트"]
 
-        # 헤더
         h1, h2, h3, h4, h5, h6 = st.columns([2.5, 2, 1, 1.5, 1.5, 1])
         for col, label in zip([h1, h2, h3, h4, h5], [
             st.session_state.headers["col1"], st.session_state.headers["col2"],
@@ -462,9 +461,9 @@ else:
                 c5.markdown(f"<div style='padding:10px 0; color:#aaa;'>{row['비고']}</div>", unsafe_allow_html=True)
                 st.markdown("<div style='border-bottom:1px solid #2d2d2d; margin:2px 0;'></div>", unsafe_allow_html=True)
 
-# ==========================================
-# 참여율
-# ==========================================
+    # ==========================================
+    # 참여율
+    # ==========================================
     elif st.session_state.current_menu == "참여율":
         if st.session_state.is_admin:
             st.markdown("### 🛠️ 레이드 출석 체크 입력 패널")
@@ -472,122 +471,106 @@ else:
             raid_date = c_date.date_input("레이드 진행 날짜", datetime.now()).strftime('%Y-%m-%d')
             boss_name = c_boss.selectbox("보스 몬스터 선택", st.session_state.boss_list)
 
-            all_characters = st.session_state.guild_members["캐릭터명"].tolist()
-            all_characters = [str(c) for c in all_characters if c and str(c).strip()]
+            all_characters = [str(c) for c in st.session_state.guild_members["캐릭터명"].tolist() if c and str(c).strip()]
+            for char in all_characters:
+                if char not in st.session_state.boss_attendance:
+                    st.session_state.boss_attendance[char] = 0
 
-        for char in all_characters:
-            if char not in st.session_state.boss_attendance:
-                st.session_state.boss_attendance[char] = 0
+            input_method = st.radio("입력 방식을 선택하세요", ["📸 AI 스크린샷 인식 기입", "✍️ 명단에서 멀티 선택"], horizontal=True)
+            final_selected_chars = []
 
-        input_method = st.radio("입력 방식을 선택하세요", ["📸 AI 스크린샷 인식 기입", "✍️ 명단에서 멀티 선택"], horizontal=True)
+            # OCR 방식
+            if input_method == "📸 AI 스크린샷 인식 기입":
+                uploaded_file = st.file_uploader("스크린샷 업로드", type=["png", "jpg", "jpeg"])
+                if uploaded_file is not None:
+                    file_bytes = np.asarray(bytearray(uploaded_file.read()), dtype=np.uint8)
+                    image = cv2.imdecode(file_bytes, 1)
+                    st.image(image, caption="업로드된 스크린샷", channels="BGR", width=400)
+                    if st.button("🔍 AI 분석 시작"):
+                        with st.spinner("OCR 분석 중..."):
+                            try:
+                                ocr_results = load_ocr_reader().readtext(image)
+                                extracted_text = []
+                                for res in ocr_results:
+                                    try:
+                                        if res and len(res) > 1:
+                                            extracted_text.append(str(res[1]).strip())
+                                    except Exception:
+                                        continue
+                                detected = []
+                                for m in all_characters:
+                                    try:
+                                        if any(str(m) in t for t in extracted_text):
+                                            detected.append(m)
+                                    except Exception:
+                                        continue
+                                st.session_state.detected_cache = detected
+                                st.session_state.ocr_done = True
+                                st.rerun()
+                            except Exception as e:
+                                st.error(f"OCR 분석 실패: {e}")
 
-        final_selected_chars = []
+                if st.session_state.ocr_done:
+                    found_list = st.session_state.detected_cache
+                    missing_list = [m for m in all_characters if m not in found_list]
+                    cf, cm = st.columns(2)
+                    cf.success(f"✅ 인식 ({len(found_list)}명): " + (", ".join(found_list) if found_list else "없음"))
+                    cm.warning(f"⚠️ 미인식 ({len(missing_list)}명): " + (", ".join(missing_list) if missing_list else "없음"))
+                    st.markdown("#### ✏️ 최종 참여 명단 확인 및 수정")
+                    final_selected_chars = st.multiselect(
+                        "참여 인원 (OCR 결과 기반, 수정 가능)",
+                        options=all_characters,
+                        default=[c for c in found_list if c in all_characters],
+                        key="ocr_multiselect"
+                    )
 
-        # ── OCR 방식 ──────────────────────────────
-        if input_method == "📸 AI 스크린샷 인식 기입":
-            uploaded_file = st.file_uploader("스크린샷 업로드", type=["png", "jpg", "jpeg"])
-
-            if uploaded_file is not None:
-                file_bytes = np.asarray(bytearray(uploaded_file.read()), dtype=np.uint8)
-                image = cv2.imdecode(file_bytes, 1)
-                st.image(image, caption="업로드된 스크린샷", channels="BGR", width=400)
-
-                if st.button("🔍 AI 분석 시작"):
-                    with st.spinner("OCR 분석 중..."):
-                        try:
-                            ocr_results = load_ocr_reader().readtext(image)
-                            extracted_text = []
-                            for res in ocr_results:
-                                try:
-                                    if res and len(res) > 1:
-                                        extracted_text.append(str(res[1]).strip())
-                                except Exception:
-                                    continue
-
-                            detected = []
-                            for m in all_characters:
-                                try:
-                                    if any(str(m) in t for t in extracted_text):
-                                        detected.append(m)
-                                except Exception:
-                                    continue
-
-                            st.session_state.detected_cache = detected
-                            st.session_state.ocr_done = True
-                        except Exception as e:
-                            st.error(f"OCR 분석 실패: {e}")
-
-            if st.session_state.get("ocr_done", False):
-                found_list = st.session_state.get("detected_cache", [])
-                missing_list = [m for m in all_characters if m not in found_list]
-
-                st.markdown("#### 🔍 인식 결과 — 잘못된 경우 아래에서 직접 수정하세요")
-                cf, cm = st.columns(2)
-                cf.success(f"✅ 인식 ({len(found_list)}명): " + (", ".join(found_list) if found_list else "없음"))
-                cm.warning(f"⚠️ 미인식 ({len(missing_list)}명): " + (", ".join(missing_list) if missing_list else "없음"))
-
-                st.markdown("#### ✏️ 최종 참여 명단 확인 및 수정")
-                final_selected_chars = st.multiselect(
-                    "참여 인원 (OCR 결과 기반, 수정 가능)",
-                    options=all_characters,
-                    default=found_list,
-                    key="ocr_multiselect"
-                )
-
-        # ── 멀티 선택 방식 ────────────────────────
-        else:
-            st.markdown("#### ✅ 참여 인원 선택")
-            final_selected_chars = st.multiselect(
-                "참여한 길드원을 선택하세요",
-                options=all_characters,
-                default=[],
-                key="manual_multiselect"
-            )
-
-            if final_selected_chars:
-                st.info(f"선택된 인원 {len(final_selected_chars)}명: " + ", ".join(final_selected_chars))
-
-        # ── 등록 버튼 ─────────────────────────────
-        st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("💾 참여 인원 등록 및 로그 저장", use_container_width=True):
-            if final_selected_chars:
-                for char in final_selected_chars:
-                    st.session_state.boss_attendance[char] = st.session_state.boss_attendance.get(char, 0) + 1
-                st.session_state.raid_logs.append({
-                    "날짜": raid_date,
-                    "보스명": boss_name,
-                    "참여명단": final_selected_chars
-                })
-                save_attendance(st.session_state.boss_attendance)
-                save_raid_logs(st.session_state.raid_logs)
-                st.success(f"🔥 {boss_name} 레이드 정산 완료! ({len(final_selected_chars)}명 등록)")
-                if "ocr_done" in st.session_state:
-                    st.session_state.ocr_done = False
-                if "detected_cache" in st.session_state:
-                    st.session_state.detected_cache = []
-                st.rerun()
+            # 멀티 선택 방식
             else:
-                st.warning("⚠️ 참여 인원을 1명 이상 선택해주세요.")
+                st.markdown("#### ✅ 참여 인원 선택")
+                final_selected_chars = st.multiselect(
+                    "참여한 길드원을 선택하세요",
+                    options=all_characters,
+                    default=[],
+                    key="manual_multiselect"
+                )
+                if final_selected_chars:
+                    st.info(f"선택된 인원 {len(final_selected_chars)}명: " + ", ".join(final_selected_chars))
 
-        st.markdown("---")
+            st.markdown("<br>", unsafe_allow_html=True)
+            if st.button("💾 참여 인원 등록 및 로그 저장", use_container_width=True):
+                if final_selected_chars:
+                    for char in final_selected_chars:
+                        st.session_state.boss_attendance[char] = st.session_state.boss_attendance.get(char, 0) + 1
+                    st.session_state.raid_logs.append({
+                        "날짜": raid_date,
+                        "보스명": boss_name,
+                        "참여명단": final_selected_chars
+                    })
+                    save_attendance(st.session_state.boss_attendance)
+                    save_raid_logs(st.session_state.raid_logs)
+                    st.success(f"🔥 {boss_name} 레이드 정산 완료! ({len(final_selected_chars)}명 등록)")
+                    st.session_state.ocr_done = False
+                    st.session_state.detected_cache = []
+                    st.rerun()
+                else:
+                    st.warning("⚠️ 참여 인원을 1명 이상 선택해주세요.")
 
-    # ── 순위표 ────────────────────────────────────
-    st.markdown("### 📊 연합 보스 레이드 누적 참여 순위")
-    all_characters = st.session_state.guild_members["캐릭터명"].tolist()
-    all_characters = [str(c) for c in all_characters if c and str(c).strip()]
-    stat_rows = [{"캐릭터명": char, "누적 참여 횟수": st.session_state.boss_attendance.get(char, 0)} for char in all_characters]
-    df_stat = pd.DataFrame(stat_rows).sort_values(by="누적 참여 횟수", ascending=False)
+            st.markdown("---")
 
-    c_tot, c_top = st.columns(2)
-    with c_tot:
-        st.markdown(f'<div class="stat-card"><span style="color: #888;">👑 최고 참여 명예의 전당</span><div class="stat-number">{df_stat.iloc[0]["캐릭터명"] if not df_stat.empty else "-"}</div></div>', unsafe_allow_html=True)
-    with c_top:
-        st.markdown(f'<div class="stat-card"><span style="color: #888;">🔥 최고 레이드 참여 기록</span><div class="stat-number">{df_stat.iloc[0]["누적 참여 횟수"] if not df_stat.empty else 0} 회</div></div>', unsafe_allow_html=True)
+        st.markdown("### 📊 연합 보스 레이드 누적 참여 순위")
+        all_characters = [str(c) for c in st.session_state.guild_members["캐릭터명"].tolist() if c and str(c).strip()]
+        stat_rows = [{"캐릭터명": char, "누적 참여 횟수": st.session_state.boss_attendance.get(char, 0)} for char in all_characters]
+        df_stat = pd.DataFrame(stat_rows).sort_values(by="누적 참여 횟수", ascending=False)
 
-    st.markdown("<br>", unsafe_allow_html=True)
-    st.dataframe(df_stat, use_container_width=True, hide_index=True, column_config={
-        "누적 참여 횟수": st.column_config.ProgressColumn("🏅 누적 참여율 (포인트)", min_value=0, max_value=100, format="%d 회")
-    })
+        c_tot, c_top = st.columns(2)
+        with c_tot:
+            st.markdown(f'<div class="stat-card"><span style="color: #888;">👑 최고 참여 명예의 전당</span><div class="stat-number">{df_stat.iloc[0]["캐릭터명"] if not df_stat.empty else "-"}</div></div>', unsafe_allow_html=True)
+        with c_top:
+            st.markdown(f'<div class="stat-card"><span style="color: #888;">🔥 최고 레이드 참여 기록</span><div class="stat-number">{df_stat.iloc[0]["누적 참여 횟수"] if not df_stat.empty else 0} 회</div></div>', unsafe_allow_html=True)
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.dataframe(df_stat, use_container_width=True, hide_index=True, column_config={
+            "누적 참여 횟수": st.column_config.ProgressColumn("🏅 누적 참여율 (포인트)", min_value=0, max_value=100, format="%d 회")
+        })
 
     # ==========================================
     # 로그
