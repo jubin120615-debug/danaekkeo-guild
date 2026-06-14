@@ -170,8 +170,8 @@ if "discord_url" not in st.session_state:
     st.session_state.discord_url = _cfg.get("discord_url", "https://discord.com/")
 if "kakao_url" not in st.session_state:
     st.session_state.kakao_url = _cfg.get("kakao_url", "https://open.kakao.com/")
-if "admin_password" not in st.session_state:
-    st.session_state.admin_password = _cfg.get("admin_password", "1336")
+# ✅ 수정: 비밀번호는 매번 시트에서 새로 읽어서 적용 (세션 캐시 무시)
+st.session_state.admin_password = _cfg.get("admin_password", "1336")
 
 @st.cache_resource
 def load_ocr_reader():
@@ -206,7 +206,7 @@ st.markdown("""
         width: 54px !important; height: 54px !important;
         border-radius: 14px !important; background-color: #232428 !important;
         border: 1px solid #2d3035 !important; color: #aaaaaa !important;
-        font-size: 2.4rem !important; line-height: 1 !important;
+        font-size: 1.9rem !important; line-height: 1 !important;
         display: flex !important; align-items: center !important;
         justify-content: center !important; transition: all 0.2s ease !important;
         margin: 3px auto !important; padding: 0 !important;
@@ -216,6 +216,21 @@ st.markdown("""
         background-color: #2b2d32 !important;
     }
     .sidebar-divider { width: 30px; height: 1px; background-color: #2d2d2d; margin: 8px auto; }
+    .sidebar-link-btn {
+        display: flex; align-items: center; justify-content: center;
+        width: 54px; height: 54px;
+        border-radius: 14px; background-color: #232428;
+        border: 1px solid #2d3035; color: #aaaaaa;
+        font-size: 1.9rem; line-height: 1;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        margin: 3px auto;
+        cursor: pointer;
+    }
+    .sidebar-link-btn:hover {
+        border-color: #00e676 !important; color: #00e676 !important;
+        background-color: #2b2d32 !important;
+    }
     .auth-box {
         background-color: #1a1a1a; border: 1px solid #333333; border-radius: 16px;
         padding: 40px; max-width: 500px; margin: 80px auto; text-align: center;
@@ -272,21 +287,20 @@ with st.sidebar:
 
     st.markdown('<div class="sidebar-divider"></div>', unsafe_allow_html=True)
 
-    # ✅ 새 탭으로 열기
+    # ✅ 수정됨: st.button 대신 HTML <a> 태그로 새 탭 링크 처리
     st.markdown(
-    f'<a href="{st.session_state.discord_url}" target="_blank" style="text-decoration:none;">'
-    f'<button style="width:54px;height:54px;border-radius:14px;background-color:#232428;'
-    f'border:1px solid #2d3035;color:#aaaaaa;font-size:1.9rem;cursor:pointer;'
-    f'display:flex;align-items:center;justify-content:center;margin:3px auto;">🎮</button></a>',
-    unsafe_allow_html=True
-)
+        f'<div style="display:flex;justify-content:center;">'
+        f'<a href="{st.session_state.discord_url}" target="_blank" title="디스코드 채널 접속" class="sidebar-link-btn">🎮</a>'
+        f'</div>',
+        unsafe_allow_html=True
+    )
     st.markdown(
-    f'<a href="{st.session_state.kakao_url}" target="_blank" style="text-decoration:none;">'
-    f'<button style="width:54px;height:54px;border-radius:14px;background-color:#232428;'
-    f'border:1px solid #2d3035;color:#aaaaaa;font-size:1.9rem;cursor:pointer;'
-    f'display:flex;align-items:center;justify-content:center;margin:3px auto;">💬</button></a>',
-    unsafe_allow_html=True
-)
+        f'<div style="display:flex;justify-content:center;">'
+        f'<a href="{st.session_state.kakao_url}" target="_blank" title="카카오톡방 접속" class="sidebar-link-btn">💬</a>'
+        f'</div>',
+        unsafe_allow_html=True
+    )
+
     if st.button("🔑", help="간부 관리자 모드 활성화", key="side_admin_mode"):
         if st.session_state.is_admin:
             st.session_state.is_admin = False
@@ -369,15 +383,15 @@ else:
             new_password = st.text_input("🔒 신규 마스터 비밀번호 설정", value=st.session_state.admin_password, type="password")
             st.markdown("<br>", unsafe_allow_html=True)
             save_config_btn = st.form_submit_button("💾 설정 변경 사항 일괄 저장")
-        if save_config_btn:
-            st.session_state.discord_url = new_discord
-            st.session_state.kakao_url = new_kakao
-            st.session_state.admin_password = new_password  # ← 이미 있음
-            save_env_config(new_discord, new_kakao, new_password)
-    # ✅ 캐시 초기화 후 시트에서 다시 읽도록 강제
-        st.cache_resource.clear()
-        st.success("🔥 환경설정이 저장되었습니다! 새로고침해도 유지됩니다.")
-        st.rerun()
+            if save_config_btn:
+                st.session_state.discord_url = new_discord
+                st.session_state.kakao_url = new_kakao
+                st.session_state.admin_password = new_password
+                save_env_config(new_discord, new_kakao, new_password)
+                # ✅ 수정: 캐시 초기화로 다음 리렌더링 시 시트에서 새 비밀번호 즉시 반영
+                st.cache_resource.clear()
+                st.success("🔥 환경설정이 저장되었습니다! 새로고침해도 유지됩니다.")
+                st.rerun()
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button("↩️ 일반 모드로 안전 복귀"):
             st.session_state.is_admin = False
