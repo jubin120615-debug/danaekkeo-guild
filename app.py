@@ -117,8 +117,25 @@ def save_raid_logs(logs):
     except Exception as e:
         st.error(f"레이드 로그 저장 실패: {e}")
 
+# ✅ 보스목록 시트 연동 함수 (신규 추가)
+def load_boss_list():
+    try:
+        data = get_sheet('보스목록').get_all_records()
+        if data:
+            return [str(row["보스명"]) for row in data if row["보스명"]]
+    except Exception as e:
+        st.warning(f"보스목록 불러오기 실패: {e}")
+    return ["벨루치 (필드)", "가나비슈 (필드)", "바포메트 (심연)", "라돈 (심연)", "기타 정예"]
+
+def save_boss_list(boss_list):
+    try:
+        sh = get_sheet('보스목록')
+        sh.clear()
+        sh.update([["보스명"]] + [[b] for b in boss_list])
+    except Exception as e:
+        st.error(f"보스목록 저장 실패: {e}")
+
 def load_env_config():
-    # ✅ 핵심 수정: get_workbook() 캐시를 우회해서 항상 시트에서 직접 읽기
     try:
         creds_dict = st.secrets["gcp_service_account"]
         scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
@@ -127,7 +144,6 @@ def load_env_config():
         wb = client.open('길드명부')
         data = wb.worksheet('환경설정').get_all_records()
         if data:
-            # ✅ 구글 시트가 숫자를 int로 읽으므로 모든 값을 str로 강제 변환
             cfg = {str(row["키"]): str(row["값"]) for row in data}
             if "admin_password" not in cfg and "password" in cfg:
                 cfg["admin_password"] = cfg["password"]
@@ -140,7 +156,6 @@ def save_env_config(discord_url, kakao_url, password):
     try:
         sh = get_sheet('환경설정')
         sh.clear()
-        # ✅ 키를 'password'로 통일해서 저장 (시트 원본 구조 유지)
         sh.update([
             ["키", "값"],
             ["discord_url", discord_url],
@@ -161,8 +176,9 @@ if "is_admin" not in st.session_state:
     st.session_state.is_admin = False
 if "headers" not in st.session_state:
     st.session_state.headers = {"col1": "캐릭터명", "col2": "클래스", "col3": "레벨", "col4": "전투력", "col5": "비고"}
+# ✅ 수정: 시트에서 보스목록 불러오기
 if "boss_list" not in st.session_state:
-    st.session_state.boss_list = ["벨루치 (필드)", "가나비슈 (필드)", "바포메트 (심연)", "라돈 (심연)", "기타 정예"]
+    st.session_state.boss_list = load_boss_list()
 if "notices" not in st.session_state:
     st.session_state.notices = load_notices()
 if "guild_members" not in st.session_state:
@@ -181,7 +197,6 @@ if "discord_url" not in st.session_state:
     st.session_state.discord_url = _cfg.get("discord_url", "https://discord.com/")
 if "kakao_url" not in st.session_state:
     st.session_state.kakao_url = _cfg.get("kakao_url", "https://open.kakao.com/")
-# ✅ 수정: 비밀번호는 매번 시트에서 새로 읽어서 적용 (세션 캐시 무시)
 st.session_state.admin_password = _cfg.get("admin_password", "1336")
 
 @st.cache_resource
@@ -298,7 +313,6 @@ with st.sidebar:
 
     st.markdown('<div class="sidebar-divider"></div>', unsafe_allow_html=True)
 
-    # ✅ 수정됨: st.button 대신 HTML <a> 태그로 새 탭 링크 처리
     st.markdown(
         f'<div style="display:flex;justify-content:center;">'
         f'<a href="{st.session_state.discord_url}" target="_blank" title="디스코드 채널 접속" class="sidebar-link-btn">🎮</a>'
@@ -399,7 +413,6 @@ else:
                 st.session_state.kakao_url = new_kakao
                 st.session_state.admin_password = new_password
                 save_env_config(new_discord, new_kakao, new_password)
-                # ✅ 수정: 캐시 초기화로 다음 리렌더링 시 시트에서 새 비밀번호 즉시 반영
                 st.cache_resource.clear()
                 st.success("🔥 환경설정이 저장되었습니다! 새로고침해도 유지됩니다.")
                 st.rerun()
@@ -535,6 +548,35 @@ else:
     # ==========================================
     elif st.session_state.current_menu == "참여율":
         if st.session_state.is_admin:
+
+            # ✅ 신규: 보스 목록 관리 UI
+            with st.expander("⚔️ 보스 목록 관리 (추가 / 삭제)", expanded=False):
+                st.markdown("#### 현재 등록된 보스 목록")
+                for b_idx, b_name in enumerate(st.session_state.boss_list):
+                    col_name, col_del = st.columns([5, 1])
+                    col_name.markdown(f"<div style='padding:8px 0; color:#e0e0e0;'>⚔️ {b_name}</div>", unsafe_allow_html=True)
+                    if col_del.button("🗑️", key=f"del_boss_{b_idx}", help=f"{b_name} 삭제"):
+                        st.session_state.boss_list.pop(b_idx)
+                        save_boss_list(st.session_state.boss_list)
+                        st.toast(f"🗑️ '{b_name}' 삭제 완료")
+                        st.rerun()
+
+                st.markdown("---")
+                st.markdown("#### 새 보스 추가")
+                with st.form("add_boss_form", clear_on_submit=True):
+                    new_boss_name = st.text_input("보스명 입력", placeholder="예: 케르베로스 (심연)")
+                    if st.form_submit_button("➕ 보스 추가", use_container_width=True):
+                        if new_boss_name.strip():
+                            if new_boss_name.strip() in st.session_state.boss_list:
+                                st.warning("이미 등록된 보스명입니다.")
+                            else:
+                                st.session_state.boss_list.append(new_boss_name.strip())
+                                save_boss_list(st.session_state.boss_list)
+                                st.toast(f"✅ '{new_boss_name.strip()}' 추가 완료!")
+                                st.rerun()
+                        else:
+                            st.error("보스명을 입력해주세요.")
+
             st.markdown("### 🛠️ 레이드 출석 체크 입력 패널")
             c_date, c_boss = st.columns(2)
             raid_date = c_date.date_input("레이드 진행 날짜", datetime.now()).strftime('%Y-%m-%d')
