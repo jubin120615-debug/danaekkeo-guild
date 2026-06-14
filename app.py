@@ -117,6 +117,28 @@ def save_raid_logs(logs):
     except Exception as e:
         st.error(f"레이드 로그 저장 실패: {e}")
 
+def load_env_config():
+    try:
+        data = get_sheet('환경설정').get_all_records()
+        if data:
+            return {row["키"]: row["값"] for row in data}
+    except Exception as e:
+        st.warning(f"환경설정 불러오기 실패: {e}")
+    return {}
+
+def save_env_config(discord_url, kakao_url, password):
+    try:
+        sh = get_sheet('환경설정')
+        sh.clear()
+        sh.update([
+            ["키", "값"],
+            ["discord_url", discord_url],
+            ["kakao_url", kakao_url],
+            ["admin_password", password]
+        ])
+    except Exception as e:
+        st.error(f"환경설정 저장 실패: {e}")
+
 # ==========================================
 # 2. 세션 상태 초기화
 # ==========================================
@@ -126,12 +148,6 @@ if "auth_target" not in st.session_state:
     st.session_state.auth_target = None
 if "is_admin" not in st.session_state:
     st.session_state.is_admin = False
-if "admin_password" not in st.session_state:
-    st.session_state.admin_password = "1336"
-if "discord_url" not in st.session_state:
-    st.session_state.discord_url = "https://discord.com/"
-if "kakao_url" not in st.session_state:
-    st.session_state.kakao_url = "https://open.kakao.com/"
 if "headers" not in st.session_state:
     st.session_state.headers = {"col1": "캐릭터명", "col2": "클래스", "col3": "레벨", "col4": "전투력", "col5": "비고"}
 if "boss_list" not in st.session_state:
@@ -148,6 +164,15 @@ if "ocr_done" not in st.session_state:
     st.session_state.ocr_done = False
 if "detected_cache" not in st.session_state:
     st.session_state.detected_cache = []
+
+# ✅ 환경설정 시트에서 로드
+_cfg = load_env_config()
+if "discord_url" not in st.session_state:
+    st.session_state.discord_url = _cfg.get("discord_url", "https://discord.com/")
+if "kakao_url" not in st.session_state:
+    st.session_state.kakao_url = _cfg.get("kakao_url", "https://open.kakao.com/")
+if "admin_password" not in st.session_state:
+    st.session_state.admin_password = _cfg.get("admin_password", "1336")
 
 @st.cache_resource
 def load_ocr_reader():
@@ -334,12 +359,13 @@ else:
             st.markdown("#### 2. 통합 관제 게이트웨이 보안 암호 수정")
             new_password = st.text_input("🔒 신규 마스터 비밀번호 설정", value=st.session_state.admin_password, type="password")
             st.markdown("<br>", unsafe_allow_html=True)
-            save_config = st.form_submit_button("💾 설정 변경 사항 일괄 저장")
-            if save_config:
+            save_config_btn = st.form_submit_button("💾 설정 변경 사항 일괄 저장")
+            if save_config_btn:
                 st.session_state.discord_url = new_discord
                 st.session_state.kakao_url = new_kakao
                 st.session_state.admin_password = new_password
-                st.success("🔥 환경설정이 완벽하게 변경 및 저장되었습니다!")
+                save_env_config(new_discord, new_kakao, new_password)  # ✅ 시트 저장
+                st.success("🔥 환경설정이 저장되었습니다! 새로고침해도 유지됩니다.")
                 st.rerun()
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button("↩️ 일반 모드로 안전 복귀"):
@@ -486,7 +512,6 @@ else:
             input_method = st.radio("입력 방식을 선택하세요", ["📸 AI 스크린샷 인식 기입", "✍️ 명단에서 멀티 선택"], horizontal=True)
             final_selected_chars = []
 
-            # OCR 방식
             if input_method == "📸 AI 스크린샷 인식 기입":
                 uploaded_file = st.file_uploader("스크린샷 업로드", type=["png", "jpg", "jpeg"])
                 if uploaded_file is not None:
@@ -530,8 +555,6 @@ else:
                         default=[c for c in found_list if c in all_characters],
                         key="ocr_multiselect"
                     )
-
-            # 멀티 선택 방식
             else:
                 st.markdown("#### ✅ 참여 인원 선택")
                 final_selected_chars = st.multiselect(
