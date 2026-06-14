@@ -368,7 +368,7 @@ with st.sidebar:
 
     # 관리자 / 환경설정
     admin_icon = "shield_person" if st.session_state.is_admin else "key"
-    admin_text = "관리자 모드 ON" if st.session_state.is_admin else "간부 관리자 모드"
+    admin_text = "관리자 모드 ON" if st.session_state.is_admin else "관리자 모드"
     if st.button(f":material/{admin_icon}: {admin_text}", key="side_admin_mode", use_container_width=True,
                   type="primary" if st.session_state.is_admin else "secondary"):
         if st.session_state.is_admin:
