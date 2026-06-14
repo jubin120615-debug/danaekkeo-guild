@@ -330,7 +330,7 @@ with st.sidebar:
                     border-radius: 10px; display:flex; align-items:center; justify-content:center;
                     font-weight:bold; color:#121212; font-size:0.75rem;
                     box-shadow: 0 4px 12px rgba(0, 230, 118, 0.35);">채채TV</div>
-        <div style="color:#e0e0e0; font-size:1.15rem; font-weight:bold;">레이븐2</div>
+        <div style="color:#e0e0e0; font-size:1.15rem; font-weight:bold;">레이븐2 다내꺼</div>
     </div>
     <div class="sidebar-divider"></div>
     """, unsafe_allow_html=True)
