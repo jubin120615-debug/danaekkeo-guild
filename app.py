@@ -232,7 +232,7 @@ st.markdown("""
         width: 54px !important; height: 54px !important;
         border-radius: 14px !important; background-color: #232428 !important;
         border: 1px solid #2d3035 !important; color: #aaaaaa !important;
-        font-size: 1.9rem !important; line-height: 1 !important;
+        font-size: 2.3rem !important; line-height: 1 !important;
         display: flex !important; align-items: center !important;
         justify-content: center !important; transition: all 0.2s ease !important;
         margin: 3px auto !important; padding: 0 !important;
@@ -247,7 +247,7 @@ st.markdown("""
         width: 54px; height: 54px;
         border-radius: 14px; background-color: #232428;
         border: 1px solid #2d3035; color: #aaaaaa;
-        font-size: 1.9rem; line-height: 1;
+        font-size: 2.3rem; line-height: 1;
         text-decoration: none;
         transition: all 0.2s ease;
         margin: 3px auto;
