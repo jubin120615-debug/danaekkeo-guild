@@ -237,6 +237,13 @@ st.markdown("""
         justify-content: center !important; transition: all 0.2s ease !important;
         margin: 3px auto !important; padding: 0 !important;
     }
+    [data-testid="stSidebarUserContent"] div.stButton > button p {
+        font-size: 2.2rem !important;
+        transform: scale(1.2) !important;
+        display: block !important;
+        line-height: 1 !important;
+        margin: 0 !important;
+    }
     [data-testid="stSidebarUserContent"] div.stButton > button:hover {
         border-color: #00e676 !important; color: #00e676 !important;
         background-color: #2b2d32 !important;
