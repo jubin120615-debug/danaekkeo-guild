@@ -2,3 +2,6 @@ streamlit
 pandas
 gspread
 oauth2client
+opencv-python-headless
+easyocr
+numpy
