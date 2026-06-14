@@ -165,7 +165,6 @@ if "ocr_done" not in st.session_state:
 if "detected_cache" not in st.session_state:
     st.session_state.detected_cache = []
 
-# ✅ 환경설정 시트에서 로드
 _cfg = load_env_config()
 if "discord_url" not in st.session_state:
     st.session_state.discord_url = _cfg.get("discord_url", "https://discord.com/")
@@ -273,10 +272,11 @@ with st.sidebar:
 
     st.markdown('<div class="sidebar-divider"></div>', unsafe_allow_html=True)
 
+    # ✅ 새 탭으로 열기
     if st.button("🎮", help="디스코드 채널 접속", key="link_discord"):
-        st.markdown(f'<meta http-equiv="refresh" content="0; url={st.session_state.discord_url}">', unsafe_allow_html=True)
+        st.markdown(f'<script>window.open("{st.session_state.discord_url}", "_blank");</script>', unsafe_allow_html=True)
     if st.button("💬", help="카카오톡방 접속", key="link_kakao"):
-        st.markdown(f'<meta http-equiv="refresh" content="0; url={st.session_state.kakao_url}">', unsafe_allow_html=True)
+        st.markdown(f'<script>window.open("{st.session_state.kakao_url}", "_blank");</script>', unsafe_allow_html=True)
 
     if st.button("🔑", help="간부 관리자 모드 활성화", key="side_admin_mode"):
         if st.session_state.is_admin:
@@ -364,7 +364,7 @@ else:
                 st.session_state.discord_url = new_discord
                 st.session_state.kakao_url = new_kakao
                 st.session_state.admin_password = new_password
-                save_env_config(new_discord, new_kakao, new_password)  # ✅ 시트 저장
+                save_env_config(new_discord, new_kakao, new_password)
                 st.success("🔥 환경설정이 저장되었습니다! 새로고침해도 유지됩니다.")
                 st.rerun()
         st.markdown("<br>", unsafe_allow_html=True)
