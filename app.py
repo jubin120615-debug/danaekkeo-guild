@@ -208,6 +208,7 @@ def load_ocr_reader():
 # ==========================================
 st.markdown("""
 <style>
+    @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined');
     html, body, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {
         background-color: #121212 !important;
         color: #e0e0e0 !important;
@@ -279,7 +280,23 @@ st.markdown("""
     }
     .sidebar-icon {
         display: inline-flex; align-items: center; justify-content: center;
-        width: 22px; flex-shrink: 0; font-size: 1.05rem;
+        width: 22px; flex-shrink: 0;
+    }
+    .material-symbols-outlined {
+        font-family: 'Material Symbols Outlined';
+        font-weight: normal; font-style: normal;
+        font-size: 20px; line-height: 1;
+        letter-spacing: normal; text-transform: none;
+        white-space: nowrap; direction: ltr;
+        -webkit-font-smoothing: antialiased;
+    }
+    [data-testid="stIconMaterial"] {
+        font-size: 20px !important;
+        width: 22px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        flex-shrink: 0 !important;
     }
     .auth-box {
         background-color: #1a1a1a; border: 1px solid #333333; border-radius: 16px;
@@ -320,14 +337,14 @@ with st.sidebar:
 
     # 메인 메뉴
     menu_items = [
-        ("공지사항", "📢", "공지사항"),
-        ("명부", "👥", "길드원 명부"),
-        ("참여율", "📊", "보스 참여 기록"),
-        ("로그", "📜", "레이드 로그"),
+        ("공지사항", "campaign", "공지사항"),
+        ("명부", "group", "길드원 명부"),
+        ("참여율", "bar_chart", "보스 참여 기록"),
+        ("로그", "history_edu", "레이드 로그"),
     ]
     for menu_key, menu_icon, menu_text in menu_items:
         is_active = (st.session_state.auth_target is None) and (st.session_state.current_menu == menu_key)
-        if st.button(f"{menu_icon} {menu_text}", key=f"side_{menu_key}", use_container_width=True,
+        if st.button(f":material/{menu_icon}: {menu_text}", key=f"side_{menu_key}", use_container_width=True,
                       type="primary" if is_active else "secondary"):
             st.session_state.current_menu = menu_key
             st.session_state.auth_target = None
@@ -338,21 +355,21 @@ with st.sidebar:
     # 외부 링크
     st.markdown(
         f'<a href="{st.session_state.discord_url}" target="_blank" class="sidebar-link-btn">'
-        f'<span class="sidebar-icon">🎮</span><span>디스코드 채널</span></a>',
+        f'<span class="material-symbols-outlined sidebar-icon">sports_esports</span><span>디스코드 채널</span></a>',
         unsafe_allow_html=True
     )
     st.markdown(
         f'<a href="{st.session_state.kakao_url}" target="_blank" class="sidebar-link-btn">'
-        f'<span class="sidebar-icon">💬</span><span>카카오톡방</span></a>',
+        f'<span class="material-symbols-outlined sidebar-icon">chat</span><span>카카오톡방</span></a>',
         unsafe_allow_html=True
     )
 
     st.markdown('<div class="sidebar-divider"></div>', unsafe_allow_html=True)
 
     # 관리자 / 환경설정
-    admin_icon = "🛡️" if st.session_state.is_admin else "🔑"
+    admin_icon = "shield_person" if st.session_state.is_admin else "key"
     admin_text = "관리자 모드 ON" if st.session_state.is_admin else "간부 관리자 모드"
-    if st.button(f"{admin_icon} {admin_text}", key="side_admin_mode", use_container_width=True,
+    if st.button(f":material/{admin_icon}: {admin_text}", key="side_admin_mode", use_container_width=True,
                   type="primary" if st.session_state.is_admin else "secondary"):
         if st.session_state.is_admin:
             st.session_state.is_admin = False
@@ -362,7 +379,7 @@ with st.sidebar:
         st.rerun()
 
     config_active = (st.session_state.auth_target == "config") or (st.session_state.current_menu == "환경설정")
-    if st.button("⚙️ 마스터 환경설정", key="side_config_mode", use_container_width=True,
+    if st.button(":material/settings: 마스터 환경설정", key="side_config_mode", use_container_width=True,
                   type="primary" if config_active else "secondary"):
         st.session_state.auth_target = "config"
         st.rerun()
