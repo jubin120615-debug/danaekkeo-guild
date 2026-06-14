@@ -118,11 +118,16 @@ def save_raid_logs(logs):
         st.error(f"레이드 로그 저장 실패: {e}")
 
 def load_env_config():
+    # ✅ 핵심 수정: get_workbook() 캐시를 우회해서 항상 시트에서 직접 읽기
     try:
-        data = get_sheet('환경설정').get_all_records()
+        creds_dict = st.secrets["gcp_service_account"]
+        scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
+        creds = ServiceAccountCredentials.from_json_keyfile_dict(dict(creds_dict), scope)
+        client = gspread.authorize(creds)
+        wb = client.open('길드명부')
+        data = wb.worksheet('환경설정').get_all_records()
         if data:
             cfg = {row["키"]: row["값"] for row in data}
-            # ✅ 시트 키가 'password' 또는 'admin_password' 둘 다 대응
             if "admin_password" not in cfg and "password" in cfg:
                 cfg["admin_password"] = cfg["password"]
             return cfg
