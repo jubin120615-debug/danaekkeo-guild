@@ -127,7 +127,8 @@ def load_env_config():
         wb = client.open('길드명부')
         data = wb.worksheet('환경설정').get_all_records()
         if data:
-            cfg = {row["키"]: row["값"] for row in data}
+            # ✅ 구글 시트가 숫자를 int로 읽으므로 모든 값을 str로 강제 변환
+            cfg = {str(row["키"]): str(row["값"]) for row in data}
             if "admin_password" not in cfg and "password" in cfg:
                 cfg["admin_password"] = cfg["password"]
             return cfg
