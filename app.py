@@ -28,7 +28,10 @@ def load_members():
     try:
         data = get_sheet('길드명부').get_all_records()
         if data:
-            return pd.DataFrame(data)
+            df = pd.DataFrame(data)
+            df["레벨"]   = pd.to_numeric(df["레벨"],   errors="coerce").fillna(1).astype(int)
+            df["전투력"] = pd.to_numeric(df["전투력"], errors="coerce").fillna(0).astype(int)
+            return df
     except Exception as e:
         st.warning(f"명부 불러오기 실패: {e}")
     return pd.DataFrame([
@@ -403,6 +406,8 @@ else:
                         if new_name.strip():
                             new_row = pd.DataFrame([{"캐릭터명": new_name, "클래스": new_class, "레벨": int(new_level), "전투력": int(new_power), "비고": new_note}])
                             st.session_state.guild_members = pd.concat([st.session_state.guild_members, new_row], ignore_index=True)
+                            st.session_state.guild_members["레벨"]   = pd.to_numeric(st.session_state.guild_members["레벨"],   errors="coerce").fillna(1).astype(int)
+                            st.session_state.guild_members["전투력"] = pd.to_numeric(st.session_state.guild_members["전투력"], errors="coerce").fillna(0).astype(int)
                             save_members(st.session_state.guild_members)
                             st.toast("✅ 새 길드원이 추가되었습니다.")
                             st.rerun()
@@ -441,6 +446,8 @@ else:
                         st.session_state.guild_members.loc[mask, "레벨"]     = int(e_level)
                         st.session_state.guild_members.loc[mask, "전투력"]   = int(e_power)
                         st.session_state.guild_members.loc[mask, "비고"]     = e_note
+                        st.session_state.guild_members["레벨"]   = pd.to_numeric(st.session_state.guild_members["레벨"],   errors="coerce").fillna(1).astype(int)
+                        st.session_state.guild_members["전투력"] = pd.to_numeric(st.session_state.guild_members["전투력"], errors="coerce").fillna(0).astype(int)
                         save_members(st.session_state.guild_members)
                         st.toast(f"✅ {e_name} 저장 완료")
                         st.rerun()
