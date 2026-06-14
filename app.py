@@ -121,7 +121,11 @@ def load_env_config():
     try:
         data = get_sheet('환경설정').get_all_records()
         if data:
-            return {row["키"]: row["값"] for row in data}
+            cfg = {row["키"]: row["값"] for row in data}
+            # ✅ 시트 키가 'password' 또는 'admin_password' 둘 다 대응
+            if "admin_password" not in cfg and "password" in cfg:
+                cfg["admin_password"] = cfg["password"]
+            return cfg
     except Exception as e:
         st.warning(f"환경설정 불러오기 실패: {e}")
     return {}
@@ -130,11 +134,12 @@ def save_env_config(discord_url, kakao_url, password):
     try:
         sh = get_sheet('환경설정')
         sh.clear()
+        # ✅ 키를 'password'로 통일해서 저장 (시트 원본 구조 유지)
         sh.update([
             ["키", "값"],
             ["discord_url", discord_url],
             ["kakao_url", kakao_url],
-            ["admin_password", password]
+            ["password", password]
         ])
     except Exception as e:
         st.error(f"환경설정 저장 실패: {e}")
