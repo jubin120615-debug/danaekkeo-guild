@@ -369,11 +369,11 @@ else:
             new_password = st.text_input("🔒 신규 마스터 비밀번호 설정", value=st.session_state.admin_password, type="password")
             st.markdown("<br>", unsafe_allow_html=True)
             save_config_btn = st.form_submit_button("💾 설정 변경 사항 일괄 저장")
-    if save_config_btn:
-        st.session_state.discord_url = new_discord
-        st.session_state.kakao_url = new_kakao
-        st.session_state.admin_password = new_password  # ← 이미 있음
-        save_env_config(new_discord, new_kakao, new_password)
+        if save_config_btn:
+            st.session_state.discord_url = new_discord
+            st.session_state.kakao_url = new_kakao
+            st.session_state.admin_password = new_password  # ← 이미 있음
+            save_env_config(new_discord, new_kakao, new_password)
     # ✅ 캐시 초기화 후 시트에서 다시 읽도록 강제
         st.cache_resource.clear()
         st.success("🔥 환경설정이 저장되었습니다! 새로고침해도 유지됩니다.")
