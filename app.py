@@ -134,7 +134,7 @@ def save_env_config(discord_url, kakao_url, password):
             ["키", "값"],
             ["discord_url", discord_url],
             ["kakao_url", kakao_url],
-            ["admin_password", admin_password]
+            ["admin_password", password]
         ])
     except Exception as e:
         st.error(f"환경설정 저장 실패: {e}")
