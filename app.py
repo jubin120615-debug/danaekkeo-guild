@@ -215,54 +215,60 @@ st.markdown("""
     }
     [data-testid="stSidebarCollapseButton"] { display: none !important; }
     [data-testid="stSidebar"] {
-        min-width: 88px !important; max-width: 88px !important;
+        min-width: 230px !important; max-width: 230px !important;
         background-color: #1a1a1a !important;
         border-right: 1px solid #2d2d2d !important;
-        overflow: hidden !important;
     }
     [data-testid="stSidebarUserContent"] {
-        padding-top: 10px !important; padding-left: 0px !important;
-        padding-right: 0px !important; display: flex !important;
-        flex-direction: column !important; overflow: hidden !important;
-    }
-    [data-testid="stSidebarUserContent"] .element-container {
-        width: 100% !important; display: flex; justify-content: center;
+        padding: 20px 14px !important;
     }
     [data-testid="stSidebarUserContent"] div.stButton > button {
-        width: 54px !important; height: 54px !important;
-        border-radius: 14px !important; background-color: #232428 !important;
-        border: 1px solid #2d3035 !important; color: #aaaaaa !important;
-        font-size: 2.2rem !important; line-height: 1 !important;
-        display: flex !important; align-items: center !important;
-        justify-content: center !important; transition: all 0.2s ease !important;
-        margin: 3px auto !important; padding: 0 !important;
+        width: 100% !important;
+        min-height: 46px !important;
+        border-radius: 10px !important;
+        border: 1px solid transparent !important;
+        background-color: transparent !important;
+        color: #aaaaaa !important;
+        font-size: 0.95rem !important;
+        font-weight: 500 !important;
+        text-align: left !important;
+        justify-content: flex-start !important;
+        padding: 0 14px !important;
+        margin: 3px 0 !important;
+        line-height: 1.2 !important;
+        transition: all 0.2s ease !important;
     }
     [data-testid="stSidebarUserContent"] div.stButton > button p {
-        font-size: 2.2rem !important;
-        transform: scale(1.2) !important;
-        display: block !important;
-        line-height: 1 !important;
+        text-align: left !important;
+        font-size: 0.95rem !important;
         margin: 0 !important;
     }
     [data-testid="stSidebarUserContent"] div.stButton > button:hover {
-        border-color: #00e676 !important; color: #00e676 !important;
-        background-color: #2b2d32 !important;
+        background-color: #232428 !important;
+        color: #00e676 !important;
+        border-color: #2d3035 !important;
     }
-    .sidebar-divider { width: 30px; height: 1px; background-color: #2d2d2d; margin: 8px auto; }
+    [data-testid="stSidebarUserContent"] div.stButton > button[kind="primary"] {
+        background-color: rgba(0, 230, 118, 0.12) !important;
+        color: #00e676 !important;
+        border: 1px solid rgba(0, 230, 118, 0.35) !important;
+    }
+    [data-testid="stSidebarUserContent"] div.stButton > button[kind="primary"]:hover {
+        background-color: rgba(0, 230, 118, 0.18) !important;
+    }
+    .sidebar-divider { width: 100%; height: 1px; background-color: #2d2d2d; margin: 12px 0; }
     .sidebar-link-btn {
-        display: flex; align-items: center; justify-content: center;
-        width: 54px; height: 54px;
-        border-radius: 14px; background-color: #232428;
-        border: 1px solid #2d3035; color: #aaaaaa;
-        font-size: 2.2rem; line-height: 1;
-        text-decoration: none;
-        transition: all 0.2s ease;
-        margin: 3px auto;
-        cursor: pointer;
+        display: flex; align-items: center; gap: 10px;
+        width: 100%; min-height: 46px; box-sizing: border-box;
+        border-radius: 10px; background-color: transparent;
+        border: 1px solid transparent; color: #aaaaaa;
+        font-size: 0.95rem; font-weight: 500;
+        text-decoration: none; padding: 0 14px;
+        transition: all 0.2s ease; margin: 3px 0;
     }
     .sidebar-link-btn:hover {
-        border-color: #00e676 !important; color: #00e676 !important;
-        background-color: #2b2d32 !important;
+        border-color: #2d3035 !important; color: #00e676 !important;
+        background-color: #232428 !important;
     }
     .auth-box {
         background-color: #1a1a1a; border: 1px solid #333333; border-radius: 16px;
@@ -289,74 +295,63 @@ st.markdown("""
 # 4. 사이드바
 # ==========================================
 with st.sidebar:
+    # 상단 로고 + 타이틀
     st.markdown("""
-    <div style="text-align: center; width: 100%;">
-        <div style="width: 54px; height: 54px; background: linear-gradient(135deg, #00e676, #00b0ff);
-                    border-radius: 14px; display: inline-flex; align-items: center; justify-content: center;
-                    font-weight: bold; color: #121212; font-size: 0.85rem; margin-bottom: 6px;
-                    box-shadow: 0 4px 12px rgba(0, 230, 118, 0.35);">
-            다내꺼
-        </div>
-        <div class="sidebar-divider"></div>
+    <div style="display:flex; align-items:center; gap:10px; padding: 4px 4px 18px 4px;">
+        <div style="width: 38px; height: 38px; background: linear-gradient(135deg, #00e676, #00b0ff);
+                    border-radius: 10px; display:flex; align-items:center; justify-content:center;
+                    font-weight:bold; color:#121212; font-size:0.75rem;
+                    box-shadow: 0 4px 12px rgba(0, 230, 118, 0.35);">다내</div>
+        <div style="color:#e0e0e0; font-size:1.15rem; font-weight:bold;">대시보드</div>
     </div>
+    <div class="sidebar-divider"></div>
     """, unsafe_allow_html=True)
 
-    if st.button("📢", help="공지사항", key="side_m1"):
-        st.session_state.current_menu = "공지사항"
-        st.session_state.auth_target = None
-        st.rerun()
-    if st.button("👥", help="길드원 명부", key="side_m2"):
-        st.session_state.current_menu = "명부"
-        st.session_state.auth_target = None
-        st.rerun()
-    if st.button("📊", help="보스 참여율 정산", key="side_m3"):
-        st.session_state.current_menu = "참여율"
-        st.session_state.auth_target = None
-        st.rerun()
-    if st.button("📜", help="레이드 기록 로그", key="side_m4"):
-        st.session_state.current_menu = "로그"
-        st.session_state.auth_target = None
-        st.rerun()
+    # 메인 메뉴
+    menu_items = [
+        ("공지사항", "📢  공지사항"),
+        ("명부", "👥  길드원 명부"),
+        ("참여율", "📊  보스 참여 기록"),
+        ("로그", "📜  레이드 로그"),
+    ]
+    for menu_key, menu_label in menu_items:
+        is_active = (st.session_state.auth_target is None) and (st.session_state.current_menu == menu_key)
+        if st.button(menu_label, key=f"side_{menu_key}", use_container_width=True,
+                      type="primary" if is_active else "secondary"):
+            st.session_state.current_menu = menu_key
+            st.session_state.auth_target = None
+            st.rerun()
 
     st.markdown('<div class="sidebar-divider"></div>', unsafe_allow_html=True)
 
+    # 외부 링크
     st.markdown(
-        f'<div style="display:flex;justify-content:center;">'
-        f'<a href="{st.session_state.discord_url}" target="_blank" title="디스코드 채널 접속" class="sidebar-link-btn">🎮</a>'
-        f'</div>',
+        f'<a href="{st.session_state.discord_url}" target="_blank" class="sidebar-link-btn">🎮&nbsp;&nbsp;디스코드 채널</a>',
         unsafe_allow_html=True
     )
     st.markdown(
-        f'<div style="display:flex;justify-content:center;">'
-        f'<a href="{st.session_state.kakao_url}" target="_blank" title="카카오톡방 접속" class="sidebar-link-btn">💬</a>'
-        f'</div>',
+        f'<a href="{st.session_state.kakao_url}" target="_blank" class="sidebar-link-btn">💬&nbsp;&nbsp;카카오톡방</a>',
         unsafe_allow_html=True
     )
 
-    if st.button("🔑", help="간부 관리자 모드 활성화", key="side_admin_mode"):
+    st.markdown('<div class="sidebar-divider"></div>', unsafe_allow_html=True)
+
+    # 관리자 / 환경설정
+    admin_label = "🛡️  관리자 모드 ON" if st.session_state.is_admin else "🔑  간부 관리자 모드"
+    if st.button(admin_label, key="side_admin_mode", use_container_width=True,
+                  type="primary" if st.session_state.is_admin else "secondary"):
         if st.session_state.is_admin:
             st.session_state.is_admin = False
             st.toast("🛡️ 관리자 권한이 안전하게 해제되었습니다.")
         else:
             st.session_state.auth_target = "admin"
         st.rerun()
-    if st.button("⚙️", help="마스터 환경설정 진입", key="side_config_mode"):
+
+    config_active = (st.session_state.auth_target == "config") or (st.session_state.current_menu == "환경설정")
+    if st.button("⚙️  마스터 환경설정", key="side_config_mode", use_container_width=True,
+                  type="primary" if config_active else "secondary"):
         st.session_state.auth_target = "config"
         st.rerun()
-
-    if st.session_state.auth_target == "admin":
-        st.markdown("""<style>[data-testid="stSidebarUserContent"] div.stButton:nth-child(9) > button { border-color: #00e676 !important; color: #00e676 !important; background-color: rgba(0, 230, 118, 0.15) !important; box-shadow: 0 0 12px rgba(0, 230, 118, 0.4) !important; }</style>""", unsafe_allow_html=True)
-    elif st.session_state.auth_target == "config" or st.session_state.current_menu == "환경설정":
-        st.markdown("""<style>[data-testid="stSidebarUserContent"] div.stButton:nth-child(10) > button { border-color: #00e676 !important; color: #00e676 !important; background-color: rgba(0, 230, 118, 0.15) !important; box-shadow: 0 0 12px rgba(0, 230, 118, 0.4) !important; }</style>""", unsafe_allow_html=True)
-    elif st.session_state.is_admin:
-        st.markdown("""<style>[data-testid="stSidebarUserContent"] div.stButton:nth-child(9) > button { border-color: #00e676 !important; color: #00e676 !important; }</style>""", unsafe_allow_html=True)
-        menu_map = {"공지사항": 1, "명부": 2, "참여율": 3, "로그": 4}
-        active_idx = menu_map.get(st.session_state.current_menu, 1)
-        st.markdown(f"""<style>[data-testid="stSidebarUserContent"] div.stButton:nth-child({active_idx + 2}) > button {{ border-color: #00e676 !important; color: #00e676 !important; background-color: rgba(0, 230, 118, 0.12) !important; }}</style>""", unsafe_allow_html=True)
-    else:
-        menu_map = {"공지사항": 1, "명부": 2, "참여율": 3, "로그": 4}
-        active_idx = menu_map.get(st.session_state.current_menu, 1)
-        st.markdown(f"""<style>[data-testid="stSidebarUserContent"] div.stButton:nth-child({active_idx + 2}) > button {{ border-color: #00e676 !important; color: #00e676 !important; background-color: rgba(0, 230, 118, 0.12) !important; box-shadow: 0 0 10px rgba(0, 230, 118, 0.2) !important; }}</style>""", unsafe_allow_html=True)
 
 # ==========================================
 # 5. 비밀번호 인증
