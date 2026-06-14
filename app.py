@@ -329,8 +329,8 @@ with st.sidebar:
         <div style="width: 38px; height: 38px; background: linear-gradient(135deg, #00e676, #00b0ff);
                     border-radius: 10px; display:flex; align-items:center; justify-content:center;
                     font-weight:bold; color:#121212; font-size:0.75rem;
-                    box-shadow: 0 4px 12px rgba(0, 230, 118, 0.35);">다내</div>
-        <div style="color:#e0e0e0; font-size:1.15rem; font-weight:bold;">대시보드</div>
+                    box-shadow: 0 4px 12px rgba(0, 230, 118, 0.35);">채채</div>
+        <div style="color:#e0e0e0; font-size:1.15rem; font-weight:bold;">레이븐2 다내꺼</div>
     </div>
     <div class="sidebar-divider"></div>
     """, unsafe_allow_html=True)
