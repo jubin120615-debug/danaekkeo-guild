@@ -273,11 +273,20 @@ with st.sidebar:
     st.markdown('<div class="sidebar-divider"></div>', unsafe_allow_html=True)
 
     # ✅ 새 탭으로 열기
-    if st.button("🎮", help="디스코드 채널 접속", key="link_discord"):
-        st.markdown(f'<script>window.open("{st.session_state.discord_url}", "_blank");</script>', unsafe_allow_html=True)
-    if st.button("💬", help="카카오톡방 접속", key="link_kakao"):
-        st.markdown(f'<script>window.open("{st.session_state.kakao_url}", "_blank");</script>', unsafe_allow_html=True)
-
+    st.markdown(
+    f'<a href="{st.session_state.discord_url}" target="_blank" style="text-decoration:none;">'
+    f'<button style="width:54px;height:54px;border-radius:14px;background-color:#232428;'
+    f'border:1px solid #2d3035;color:#aaaaaa;font-size:1.9rem;cursor:pointer;'
+    f'display:flex;align-items:center;justify-content:center;margin:3px auto;">🎮</button></a>',
+    unsafe_allow_html=True
+)
+    st.markdown(
+    f'<a href="{st.session_state.kakao_url}" target="_blank" style="text-decoration:none;">'
+    f'<button style="width:54px;height:54px;border-radius:14px;background-color:#232428;'
+    f'border:1px solid #2d3035;color:#aaaaaa;font-size:1.9rem;cursor:pointer;'
+    f'display:flex;align-items:center;justify-content:center;margin:3px auto;">💬</button></a>',
+    unsafe_allow_html=True
+)
     if st.button("🔑", help="간부 관리자 모드 활성화", key="side_admin_mode"):
         if st.session_state.is_admin:
             st.session_state.is_admin = False
